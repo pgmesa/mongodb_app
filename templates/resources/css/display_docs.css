@@ -1,0 +1,15 @@
+
+#td_display{
+    padding: 0px 10px 10px 10px;
+    color: blue;
+}
+
+#td_display_vip{
+    padding: 0px 10px 10px 10px;
+    color: red;
+}
+
+#h2_head{
+   text-align: left;
+   padding: 20px 5px;
+}

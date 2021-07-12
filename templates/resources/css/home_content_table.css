@@ -1,0 +1,31 @@
+
+th{
+    margin-bottom: 10px;
+    padding: 1%;
+    text-align: left;
+    font-size: 25px;
+}
+
+aside, section {
+    border: 1px solid black;
+    background: linear-gradient(white,#eee);
+    font-weight: normal;
+    padding: 5px;
+}
+aside {
+    margin-right: 3px;
+}
+
+section{ 
+    margin-left: 3px;
+}
+
+#c_aside {
+    width: 35%;
+    vertical-align:top;
+}
+
+#c_section{
+    width: 65%;
+    vertical-align: top;
+}

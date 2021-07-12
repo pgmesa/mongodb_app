@@ -1,0 +1,72 @@
+
+{% extends 'reused_templates/base.html' %}
+
+{% block td_nav %}
+  {% if add_collection %}
+    <td style="padding: 0 10px;">
+      <a href="/display/{{db}}">Collections</a>
+    </td>
+    {% if add_doc %}
+      <td style="padding: 0 10px;">
+        <a href="/display/{{db}}/{{collection}}">Documents</a>
+      </td>
+    {% endif %}
+  {% endif %}
+{% endblock %}
+
+{% block h %}
+  {% if add_db %}
+    <h2>Add new data base to MongoDB</h2>
+  {% elif add_collection %}
+    <h2>Add collection to data base: '{{db}}'</h2>
+  {% elif add_doc %}
+    <h2>Add document to data base: '{{db}}' - collection:'{{collection}}'</h2> 
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+  {% if add_db %}
+    <form action="/add/" method="POST">
+      {% csrf_token %}
+      <table style="margin: auto;">
+        <tr>
+          <td style="text-align: left;">Nombre:</td>
+          <td><input type="text" name="name"></td>
+        </tr>
+        <tr>
+          <td colspan="2" style="text-align: right;">
+            <input type="submit" value="Add" class="button" style="padding: 0 3px;">
+          </td>
+        </tr>
+      </table>
+    </form>
+  {% elif add_collection %}
+    <form action="/add/{{db}}" method="POST">
+      {% csrf_token %}
+      <table style="margin: auto;">
+        <tr>
+          <td style="text-align: left;">Nombre:</td>
+          <td><input type="text" name="name"></td>
+        </tr>
+        <tr>
+          <td colspan="2" style="text-align: right;">
+            <input type="submit" value="Add" class="button" style="padding: 0 3px;">
+          </td>
+        </tr>
+      </table>
+    </form>
+  {% elif add_doc %}
+    <form action="/add/{{db}}/{{collection}}" method="POST">
+      {% csrf_token %}
+      <table style="margin: auto;">
+        
+
+        <tr>
+          <td colspan="2" style="text-align: right;">
+            <input type="submit" value="Add" class="button" style="padding: 0 3px;">
+          </td>
+        </tr>
+      </table>
+    </form>
+  {% endif %}
+{% endblock %}

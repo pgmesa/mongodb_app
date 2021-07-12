@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+    {% load static %}
+  <head>
+    <meta charset="utf-8">
+    <meta name="author" content="Pablo García Mesa"> 
+    <title>My Mongo App</title>
+    
+    <!-- Para incluir esta plamtilla hay que poner el dir de plantillas
+    en los settings.py de django (TEMPLATES.DIRS)-->
+    <link rel="stylesheet" href="{% static 'css/general_design.css' %}">
+    <link rel="stylesheet" href="{% static 'css/home_content_table.css' %}">
+    <link rel="stylesheet" href="{% static 'css/buttons.css' %}">
+  </head>
+
+  <body>
+    <header>
+      <table style="margin: auto;">
+        <tr>
+          <td>
+            <img src="{% static 'icons/favicon.ico' %}" alt="No se ha encontrado el logo">
+          </td>
+          <td>
+            <h1>My Mongo App</h1>
+          </td>
+        </tr>
+      </table>
+    </header>
+
+    <nav>
+      <table>
+        <tr>
+          <td style="padding: 0 10px;">
+            <a href="{% url 'home' %}">Home</a>
+          </td>
+          {% block td_nav %}
+          {% endblock %}
+        </tr>
+      </table>
+    </nav>
+    
+    <div id="main_content">
+      <div style="padding: 1%;">
+        {% block h %}
+        {% endblock %}
+      </div>
+      {% if msg or err_msg %}
+        <div style="padding-bottom: 1%;">
+          {% block msg %}
+            <table style="width: 100%;">
+              {% if msg %}
+                <tr>
+                  <td style="color: green;"><h3>{{msg}}</h3></td>
+                </tr>
+              {% endif %}
+              {% if err_msg %}
+                <tr>
+                  <td style="color: red;"><h3>{{err_msg}}</h3></td>
+                </tr>
+              {% endif %}
+            </table>
+          {% endblock %}
+          </div>
+      {% endif %}
+      <div>
+        {% block content %} 
+        {% endblock %}
+      </div>
+    </div>
+
+    <footer>
+      <p>Made by: Pablo Garcia Mesa</p>
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,51 @@
+
+{% extends 'reused_templates/base.html' %}
+
+{% load static %}
+
+{% block td_nav %}
+  {% if add_collection %}
+    <td style="padding: 0 10px;"><a href="/display/{{db}}">{{db}}</a></td>
+    {% if add_doc %}
+      <td style="padding: 0 10px;"><a href="/display/{{db}}/{{collection}}">{{collection}}</a></td>
+    {% endif %}
+  {% endif %}
+{% endblock %}
+
+{% block h %}
+  <h2>
+    Define the documents model of the collection '{{collection}}'
+  </h2>
+{% endblock %}
+
+{% block content %}
+  <table style="margin: auto;">     
+    <form action="/doc_model/{{db}}/{{collection}}" method="POST">
+      {% csrf_token %}
+      {% for attr, value in attrs.items %}
+        <tr>
+          <td style="padding: 0 5px;">
+            Attribute {{forloop.counter}}: <input type="text" name="{{attr}}" value="{{value}}">
+          </td>
+          <td>
+            <button type="submit" class="button" style="padding: 1px 3px; margin: 0;" name="remove" value="{{attr}}">
+              <img src="{% static 'icons/delete.ico' %}" alt="remove" width="25px" height="25px">
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
+        <tr>
+          <td style="text-align: left;">
+            <button type="submit" class="button" style="padding: 1px 3px; margin: 0;" name="add"> 
+              <img src="{% static 'icons/add.ico' %}" alt="add" width="25px" height="25px">
+            </button>
+          </td>
+            <td style="text-align: left;">
+              <button type="submit" class="button" style="padding: 1px 3px; margin: 0;" name="save"> 
+                Save
+              </button>
+            </td>
+        </tr>
+    </form>
+  </table>
+{% endblock %}
