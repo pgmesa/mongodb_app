@@ -2,7 +2,7 @@
 {% extends 'reused_templates/base.html' %}
 
 {% block td_nav %}
-  {% if update_collection %}
+  {% if update_collection or update_doc %}
     <td style="padding: 0 10px;">
       <a href="/display/{{db}}">Collections</a>
     </td>

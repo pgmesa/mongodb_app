@@ -20,32 +20,28 @@
     <table>
       <h2>
         <tr>
+          <td id="td_display">id</td>
           {% for attr in model %}
-            <td id="td_display">Asignatura</td>
-            <td id="td_display_vip">Calificacion</td>
+            <td id="td_display">{{attr}}</td>
+            <!-- <td id="td_display_vip">Calificacion</td> -->
           {% endfor %}
         </tr>
       </h2>
       {% for doc in docs %}
         <tr>
-          <td td style="text-align: left; width: 300px;">{{grade.name}}</td>
-          <td>{{grade.course}}</td>
-          <td>{{grade.quarter}}</td>
-          <td>{{grade.practices_mark}}</td>
-          <td>{{grade.works_mark}}</td>
-          <td>{{grade.p1_mark}}</td>
-          <td>{{grade.p2_mark}}</td>
-          <td>{{grade.final_mark}}</td>
-          <td>{{grade.calif}}</td>
+          {% for value in doc %}
+            <!-- <td td style="text-align: left; width: 300px;">{{grade.name}}</td> -->
+            <td>{{value}}</td>
+          {% endfor %}
           <td style="padding: 0 5px;">
-            <form action="/update/{{stage}}/{{grade.name}}" method="GET">
+            <form action="/update/{{db}}/{{collection}}/{{id}}" method="GET">
               <button type="submit" class="button">
                 <img src="{% static 'icons/edit.ico' %}" alt="update" width="25px" height="25px">
               </button>
             </form>
           </td>
           <td style="padding: 0 5px;">
-            <form action="/delete/{{stage}}/{{grade.name}}" method="GET">
+            <form action="/delete/{{db}}/{{collection}}/" method="GET">
               <button type="submit" class="button">
                 <img src="{% static 'icons/delete.ico' %}" alt="delete" width="25px" height="25px">
               </button>

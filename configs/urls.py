@@ -32,4 +32,5 @@ urlpatterns = [
     path('delete/<db>/<collection>', delete_collection),
     # documents
     path('display/<db>/<collection>', display_documents),
+    path('add/<db>/<collection>', add_document)
 ]

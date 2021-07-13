@@ -101,7 +101,7 @@ def create_doc_model(request:HttpRequest, db:str, collection:str):
                 form_dict.pop(attr_to_rm)
         elif "save" in form_dict:
             form_dict.pop("save")
-            if dbc.is_model_defined(db, collection):
+            if dbc.get_model(db, collection) is not None:
                 err_msg = f"La coleccion '{collection}' ya tiene un modelo creado"
                 context_dict["err_msg"] = err_msg
             else:
@@ -170,8 +170,10 @@ def delete_collection(request:HttpRequest, db:str, collection:str):
 
 # --------------------------------------------------------------------
 # -------------------------- DOCUMENT VIEWS --------------------------
-def display_documents(request:HttpRequest, db:str, collection:str):
-    context_dict = {"db": db, "collection": collection};
+def display_documents(request:HttpRequest, db:str, collection:str , extra_vars:dict={}):
+    context_dict = {"db": db, "collection": collection}
+    for var, val in extra_vars.items():
+        context_dict[var] = val
     try:
         docs = dbc.get_documents(db, collection)
     except:
@@ -179,19 +181,17 @@ def display_documents(request:HttpRequest, db:str, collection:str):
         (HOST={dbc.HOST}, PORT={dbc.PORT}), conexión rechazada"""
         context_dict["err_msg"] = err_msg
     else:
-        model_doc = {}
-        for doc in docs:
-            with suppress(Exception):
-                if doc["_id"] == "model":
-                    model_doc = doc
-                    break
+        model_doc = dbc.get_model(db, collection)
         if bool(model_doc):
-            docs.remove(model_doc)
+            context_dict["model"] = model_doc.values()
             if not bool(docs):
                 err_msg = "No existen documentos en esta coleccion"
                 context_dict["err_msg"] = err_msg
             else:
-                context_dict["docs"] = docs
+                docs_values = []
+                for doc in docs:
+                    docs_values.append(doc.values())
+                context_dict["docs"] = docs_values
         else:
             err_msg = ("Esta coleccion se ha creado desde fuera de la aplicacion, " + 
                         "no se ha especificado un modelo")
@@ -200,3 +200,26 @@ def display_documents(request:HttpRequest, db:str, collection:str):
             ...
     
     return render(request, 'documents.html', context_dict)
+
+def add_document(request:HttpRequest, db:str, collection:str):
+    context_dict = {"db": db, "collection": collection}
+    form_dict = request.POST.dict()
+    
+    if bool(form_dict):
+        form_dict.pop("csrfmiddlewaretoken")
+        doc = form_dict
+        dbc.add_document(db, collection, doc)
+        msg = "Documento añadido con exito"
+        return display_documents(request, db, collection, extra_vars={"msg": msg})
+    else:
+        try:
+            model = dbc.get_model(db, collection)
+        except:
+            err_msg = f"""Fallo al conectarse a la base de datos 
+            (HOST={dbc.HOST}, PORT={dbc.PORT}), conexión rechazada"""
+            context_dict["err_msg"] = err_msg
+        else:
+            context_dict["model"] = model.values()
+    
+    context_dict["add_doc"] = True
+    return render(request, 'add.html', context_dict)
