@@ -15,6 +15,16 @@ def clean_form(form:QueryDict) -> dict:
         cleaned.pop("csrfmiddlewaretoken")
     
     return cleaned
+
+def confirmation(request:HttpRequest) -> bool:
+    form_dict = clean_form(request.POST)
+    if bool(form_dict):
+        if "yes" in form_dict:
+            return True
+        else:
+            return False
+    
+    return render(request, 'ask_confirmation.html')
         
 # --------------------------------------------------------------------
 # ------------------------- DATA BASE VIEWS --------------------------
@@ -91,15 +101,16 @@ def update_db(request:HttpRequest, db:str):
 
 def delete_db(request:HttpRequest, db:str):
     context_dict = {}
-    try:
-        dbc.drop_db(db)
-    except:
-        err_msg = f"""Fallo al conectarse a la base de datos 
-        (HOST={dbc.HOST}, PORT={dbc.PORT}), conexión rechazada"""
-        context_dict["err_msg"] = err_msg
-    else:
-        msg = f"Base de Datos '{db}' eliminada con exito"
-        context_dict["msg"] = msg
+    if confirmation(request): 
+        try:
+            dbc.drop_db(db)
+        except:
+            err_msg = f"""Fallo al conectarse a la base de datos 
+            (HOST={dbc.HOST}, PORT={dbc.PORT}), conexión rechazada"""
+            context_dict["err_msg"] = err_msg
+        else:
+            msg = f"Base de Datos '{db}' eliminada con exito"
+            context_dict["msg"] = msg
     
     return home(request, extra_vars=context_dict)
 

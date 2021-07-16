@@ -15,14 +15,18 @@ def list_dbs() -> list[str]:
 
 def rename_db(old_name:str, new_name:str) -> None:
     if old_name == new_name: return
-    db = client[old_name]
-    new_db = client[new_name]
+    
+    db = client[old_name]; db_dict = {}
     for col_name in db.list_collection_names():
-        col = db[col_name]
-        new_col = new_db[col_name]
-        docs = col.find({})
-        new_col.insert_many(docs)
+        col = db[col_name]; docs = list(col.find({}))
+        db_dict[col_name] = docs
     drop_db(old_name)
+    
+    print(db_dict)
+    new_db = client[new_name]
+    for col_name, docs in db_dict.items():
+        new_col = new_db[col_name]
+        new_col.insert_many(docs)
     
 def drop_db(db_name:str) -> None:
     client.drop_database(db_name)
@@ -92,4 +96,4 @@ def update_document(db_name:str, collection_name:str, old_doc_id, new_doc:str):
     
 def delete_document(db_name:str, collection_name:str, doc_id:str) -> None:
     collection = client[db_name][collection_name]
-    result = collection.delete_one({"_id": ObjectId(doc_id)})
+    collection.delete_one({"_id": ObjectId(doc_id)})
