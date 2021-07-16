@@ -1,6 +1,7 @@
 
-from pymongo import MongoClient
 import pymongo
+from pymongo import MongoClient
+from bson.objectid import ObjectId
 
 PORT = 27017
 HOST = "localhost"
@@ -8,23 +9,20 @@ HOST = "localhost"
 client = MongoClient(host=HOST, port=PORT)
 # --------------------------------------------------------------------
 # ----------------------- DATA BASE OPERATIONS -----------------------
-def add_db(db_name:str) -> None:
-    db = client[db_name]
-    # collection = db["prueba"]
-    # collection.insert_one({
-    #     "name": "prueba"
-    # })
-
 def list_dbs() -> list[str]:
     dbs = client.list_database_names()
-    
     return dbs
 
 def rename_db(old_name:str, new_name:str) -> None:
-    db = client[old_name]
     if old_name == new_name: return
-    col = db[old_name]
-    col.rename(new_name)
+    db = client[old_name]
+    new_db = client[new_name]
+    for col_name in db.list_collection_names():
+        col = db[col_name]
+        new_col = new_db[col_name]
+        docs = col.find({})
+        new_col.insert_many(docs)
+    drop_db(old_name)
     
 def drop_db(db_name:str) -> None:
     client.drop_database(db_name)
@@ -69,15 +67,29 @@ def remove_collecttion(db_name:str, collection_name:str) -> None:
 
 # --------------------------------------------------------------------
 # ------------------------ DOCUMENT OPERATIONS -----------------------
-def get_documents(db_name:str, collection_name:str) -> list[dict]:
+def get_documents(db_name:str, collection_name:str, queries:dict={}) -> list[dict]:
     collection = client[db_name][collection_name]
-    docs = list(collection.find({}))
+    docs = list(collection.find(queries))
     model = get_model(db_name, collection_name, with_id=True)
-    print(model)
-    if bool(model):
+    if bool(model) and model in docs:
         docs.remove(model)
+    for doc in docs:
+        doc["id"] = doc["_id"]
+        doc.pop("_id")
     return docs
+
+def find_doc_by_id(db_name:str, collection_name:str, _id:str) -> list[dict]:
+    return get_documents(db_name, collection_name, queries={"_id": ObjectId(_id)})[0]
 
 def add_document(db_name:str, collection_name:str, doc:str) -> None:
     collection = client[db_name][collection_name]
     collection.insert_one(doc)
+    
+def update_document(db_name:str, collection_name:str, old_doc_id, new_doc:str):
+    # Actualizamos el documento
+    col = client[db_name][collection_name]
+    col.replace_one({"_id": ObjectId(old_doc_id)}, new_doc)
+    
+def delete_document(db_name:str, collection_name:str, doc_id:str) -> None:
+    collection = client[db_name][collection_name]
+    result = collection.delete_one({"_id": ObjectId(doc_id)})

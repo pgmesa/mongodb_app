@@ -10,7 +10,7 @@
 {% endblock %}
 
 {% block h %}
-  <h2>Collections of data base '{{db}}'</h2>
+  <h2>Collections of Data Base '{{db}}'</h2>
 {% endblock %}
 
 {% block content %}
@@ -20,11 +20,38 @@
         <aside style="padding: 10px">
           <table style="width: 100%;">
             {% if collections %}
-              {% for collection in collections %}
+              {% for collection in app_collections %}
                 <tr>
                   <td style="width: 90%; text-align: left; padding: 0px 15px;">
                     <ul style="list-style-position: inside;">
                       <li><a href="/display/{{db}}/{{collection}}">{{collection}}</a></li>
+                    </ul>
+                  </td>
+                  <td style="padding-right:10px;">
+                    <form action="/update/{{db}}/{{collection}}" method="GET">
+                      <button type="submit" class="img_button">
+                        <img src="{% static 'icons/edit.ico' %}" 
+                            alt="update" width="35px" height="35px">
+                      </button>
+                    </form>
+                  </td>
+                  <td style="padding-right:10px;">
+                    <form action="/delete/{{db}}/{{collection}}" method="GET">
+                      <button type="submit" class="img_button">
+                        <img src="{% static 'icons/delete.ico' %}"
+                            alt="delete" width="35px" height="35px">
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+              {% endfor %}
+              {% for collection in not_app_collections %}
+                <tr>
+                  <td style="width: 90%; text-align: left; padding: 0px 15px;">
+                    <ul style="list-style-position: inside;">
+                      <li>
+                        <a style="color: red;" href="/display/{{db}}/{{collection}}">{{collection}}</a>
+                      </li>
                     </ul>
                   </td>
                   <td style="padding-right:10px;">

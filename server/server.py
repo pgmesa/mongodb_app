@@ -1,16 +1,28 @@
 
+import json
 from contextlib import suppress
 # django imports
 from django.http import HttpResponse, HttpRequest, HttpResponseRedirect
+from django.http.request import QueryDict
 from django.shortcuts import render
 # program imports
 from controllers import db_controller as dbc
 
+
+def clean_form(form:QueryDict) -> dict:
+    cleaned = form.dict()
+    with suppress(Exception):
+        cleaned.pop("csrfmiddlewaretoken")
+    
+    return cleaned
+        
 # --------------------------------------------------------------------
 # ------------------------- DATA BASE VIEWS --------------------------
-def home(request:HttpRequest) -> HttpResponse:
+def home(request:HttpRequest, extra_vars:dict={}) -> HttpResponse:
     client_ip = request.META['REMOTE_ADDR']; print(client_ip)
     context_dict = {}
+    for var, val in extra_vars.items():
+        context_dict[var] = val
     try:
         dbs = dbc.list_dbs()
     except:
@@ -22,14 +34,74 @@ def home(request:HttpRequest) -> HttpResponse:
     response:HttpResponse = render(request, 'home.html', context_dict)
     return response
 
-def add_db(request:HttpRequest, db:str):
+def add_db(request:HttpRequest):
+    context_dict = {}; post_dict = request.POST.dict()
+    print(post_dict)
+    
+    if bool(post_dict):
+        try:
+            dbs = dbc.list_dbs()
+        except:
+            err_msg = f"""Fallo al conectarse a la base de datos 
+            (HOST={dbc.HOST}, PORT={dbc.PORT}), conexión rechazada"""
+            context_dict["err_msg"] = err_msg
+        else:
+            new_db = post_dict['name']
+            if new_db == "":
+                err_msg = "Campo nombre obligatorio"
+                context_dict["err_msg"] = err_msg
+            elif new_db in dbs:
+                err_msg = f"Este nombre ya esta usado"
+                context_dict["err_msg"] = err_msg
+            else:
+                return HttpResponseRedirect(f'/add/{new_db}')
+                
+    context_dict["add_db"] = True
+    return render(request, "add.html", context_dict)
     ...
 
 def update_db(request:HttpRequest, db:str):
     context_dict = {"db": db}
-    
+    form_dict = request.POST.dict()
+    if bool(form_dict):
+        new_name = form_dict["name"]
+        try:
+            ex_dbs = dbc.list_dbs()
+        except:
+            err_msg = f"""Fallo al conectarse a la base de datos 
+            (HOST={dbc.HOST}, PORT={dbc.PORT}), conexión rechazada"""
+            context_dict["err_msg"] = err_msg
+        else:
+            new_name = form_dict['name']
+            if new_name == "":
+                err_msg = "Campo nombre obligatorio"
+                context_dict["err_msg"] = err_msg
+            elif new_name in ex_dbs and new_name != db:
+                err_msg = ("Ya existe una coleccion en la base de datos " +
+                        f"'{db}' con este nombre")
+                context_dict["err_msg"] = err_msg
+            else:
+                dbc.rename_db(db, new_name)
+                msg = (f"Base de Datos '{db}' actualizada con exito " + 
+                        f"-> '{new_name}'")
+                return home(request, extra_vars={"msg": msg})
+            
     context_dict["update_db"] = True
     return render(request, "update.html", context_dict)
+
+def delete_db(request:HttpRequest, db:str):
+    context_dict = {}
+    try:
+        dbc.drop_db(db)
+    except:
+        err_msg = f"""Fallo al conectarse a la base de datos 
+        (HOST={dbc.HOST}, PORT={dbc.PORT}), conexión rechazada"""
+        context_dict["err_msg"] = err_msg
+    else:
+        msg = f"Base de Datos '{db}' eliminada con exito"
+        context_dict["msg"] = msg
+    
+    return home(request, extra_vars=context_dict)
 
 # --------------------------------------------------------------------
 # ------------------------- COLLECTION VIEWS -------------------------
@@ -38,7 +110,8 @@ def display_collections(request:HttpRequest, db:str, extra_vars:dict={}):
     for var, val in extra_vars.items():
         context_dict[var] = val
     try:
-        collections = dbc.list_collections(db)
+        collections = dbc.list_collections(db, all_coll=True)
+        app_collections = dbc.list_collections(db)
     except:
         err_msg = f"""Fallo al conectarse a la base de datos 
         (HOST={dbc.HOST}, PORT={dbc.PORT}), conexión rechazada"""
@@ -48,7 +121,11 @@ def display_collections(request:HttpRequest, db:str, extra_vars:dict={}):
             err_msg = "No existen colecciones en esta base de datos"
             context_dict["err_msg"] = err_msg
         else:
-            context_dict["collections"] = collections
+            context_dict["collections"] = True
+            for col in app_collections:
+                collections.remove(col)
+            context_dict["app_collections"] = app_collections
+            context_dict["not_app_collections"] = collections
     
     return render(request, 'collections.html', context_dict)
 
@@ -132,7 +209,7 @@ def update_collection(request:HttpRequest, db:str, collection:str):
             ex_collections = dbc.list_collections(db)
         except:
             err_msg = f"""Fallo al conectarse a la base de datos 
-            (HOST={db.HOST}, PORT={db.PORT}), conexión rechazada"""
+            (HOST={dbc.HOST}, PORT={dbc.PORT}), conexión rechazada"""
             context_dict["err_msg"] = err_msg
         else:
             new_name = form_dict['name']
@@ -147,7 +224,6 @@ def update_collection(request:HttpRequest, db:str, collection:str):
                 dbc.rename_collection(db, collection, new_name)
                 msg = (f"Coleccion '{collection}' actualizada con exito " + 
                         f"-> '{new_name}'")
-                context_dict["msg"] = msg
                 return display_collections(request, db, extra_vars={"msg": msg})
     
     context_dict["update_collection"] = True
@@ -155,7 +231,6 @@ def update_collection(request:HttpRequest, db:str, collection:str):
 
 def delete_collection(request:HttpRequest, db:str, collection:str):
     context_dict = {}
-    form_dict = request.POST.dict()
     try:
         dbc.remove_collecttion(db, collection)
     except:
@@ -183,21 +258,30 @@ def display_documents(request:HttpRequest, db:str, collection:str , extra_vars:d
     else:
         model_doc = dbc.get_model(db, collection)
         if bool(model_doc):
-            context_dict["model"] = model_doc.values()
+            context_dict["model"] = list(model_doc.values())
             if not bool(docs):
                 err_msg = "No existen documentos en esta coleccion"
                 context_dict["err_msg"] = err_msg
             else:
-                docs_values = []
-                for doc in docs:
-                    docs_values.append(doc.values())
-                context_dict["docs"] = docs_values
+                context_dict["docs"] = docs
         else:
-            err_msg = ("Esta coleccion se ha creado desde fuera de la aplicacion, " + 
-                        "no se ha especificado un modelo")
-            context_dict["err_msg"] = err_msg
-            # Preguntar si intentar desplegar pero sin opcion a añadir y pudiendo verse mal
-            ...
+            num = 20; context_dict["show_more"] = True
+            form_dict = clean_form(request.GET)
+            if "show_more" in form_dict:
+                num = int(form_dict["show_more"]) + 10
+            if num >= len(docs): 
+                num = len(docs)
+                context_dict.pop("show_more")
+            context_dict["num"] = num
+            
+            str_docs = []
+            for i, doc in enumerate(docs):
+                if i == num: break
+                for attr, value in doc.items():
+                    doc[attr] = str(value)
+                str_doc = json.dumps(doc, indent=4, sort_keys=True)
+                str_docs.append(str_doc)
+            context_dict["docs"] = str_docs
     
     return render(request, 'documents.html', context_dict)
 
@@ -223,3 +307,47 @@ def add_document(request:HttpRequest, db:str, collection:str):
     
     context_dict["add_doc"] = True
     return render(request, 'add.html', context_dict)
+
+def update_document(request:HttpRequest, db:str, collection:str, doc_id:str):
+    context_dict = {"db": db, "collection": collection}
+    doc = dbc.find_doc_by_id(db, collection, doc_id)
+    context_dict["doc"] = doc
+    
+    form_dict = clean_form(request.POST)
+    print(form_dict)
+    if bool(form_dict):
+        new_doc = form_dict
+        try:
+            dbc.update_document(db, collection, doc_id, new_doc)
+        except IndexError:
+            err_msg = f"""Fallo al conectarse a la base de datos 
+            (HOST={dbc.HOST}, PORT={dbc.PORT}), conexión rechazada"""
+            context_dict["err_msg"] = err_msg
+        else:
+            msg = (f"Documento con id '{doc_id}' actualizado con exito")
+            return display_documents(request, db, collection, extra_vars={"msg": msg})
+    
+    context_dict["update_doc"] = True
+    return render(request, "update.html", context_dict)
+
+def delete_document(request:HttpRequest, db:str, collection:str, doc_id:str):
+    context_dict = {}
+    try:
+        dbc.delete_document(db, collection, doc_id)
+    except:
+        err_msg = f"""Fallo al conectarse a la base de datos 
+        (HOST={dbc.HOST}, PORT={dbc.PORT}), conexión rechazada"""
+        context_dict["err_msg"] = err_msg
+    else:
+        msg = f"Documento con id '{doc_id}' eliminado con exito"
+        context_dict["msg"] = msg
+    
+    return display_documents(request, db, collection, extra_vars=context_dict)
+
+def filter_documents():
+    ...
+    
+def sort_documents():
+    ...
+    
+    
