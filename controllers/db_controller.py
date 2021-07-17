@@ -22,7 +22,6 @@ def rename_db(old_name:str, new_name:str) -> None:
         db_dict[col_name] = docs
     drop_db(old_name)
     
-    print(db_dict)
     new_db = client[new_name]
     for col_name, docs in db_dict.items():
         new_col = new_db[col_name]
@@ -87,6 +86,9 @@ def find_doc_by_id(db_name:str, collection_name:str, _id:str) -> list[dict]:
 
 def add_document(db_name:str, collection_name:str, doc:str) -> None:
     collection = client[db_name][collection_name]
+    _id = doc.get("_id", None)
+    if _id is not None and not isinstance(_id, ObjectId):
+        doc["_id"] = ObjectId(_id)
     collection.insert_one(doc)
     
 def update_document(db_name:str, collection_name:str, old_doc_id, new_doc:str):

@@ -15,16 +15,6 @@ def clean_form(form:QueryDict) -> dict:
         cleaned.pop("csrfmiddlewaretoken")
     
     return cleaned
-
-def confirmation(request:HttpRequest) -> bool:
-    form_dict = clean_form(request.POST)
-    if bool(form_dict):
-        if "yes" in form_dict:
-            return True
-        else:
-            return False
-    
-    return render(request, 'ask_confirmation.html')
         
 # --------------------------------------------------------------------
 # ------------------------- DATA BASE VIEWS --------------------------
@@ -46,7 +36,6 @@ def home(request:HttpRequest, extra_vars:dict={}) -> HttpResponse:
 
 def add_db(request:HttpRequest):
     context_dict = {}; post_dict = request.POST.dict()
-    print(post_dict)
     
     if bool(post_dict):
         try:
@@ -68,7 +57,6 @@ def add_db(request:HttpRequest):
                 
     context_dict["add_db"] = True
     return render(request, "add.html", context_dict)
-    ...
 
 def update_db(request:HttpRequest, db:str):
     context_dict = {"db": db}
@@ -100,19 +88,27 @@ def update_db(request:HttpRequest, db:str):
     return render(request, "update.html", context_dict)
 
 def delete_db(request:HttpRequest, db:str):
-    context_dict = {}
-    if confirmation(request): 
-        try:
-            dbc.drop_db(db)
-        except:
-            err_msg = f"""Fallo al conectarse a la base de datos 
-            (HOST={dbc.HOST}, PORT={dbc.PORT}), conexión rechazada"""
-            context_dict["err_msg"] = err_msg
+    context_dict = {"db": db}; conf_dict = clean_form(request.POST)
+    if bool(conf_dict): 
+        if "yes" in conf_dict:
+            try:
+                dbc.drop_db(db)
+            except:
+                err_msg = f"""Fallo al conectarse a la base de datos 
+                (HOST={dbc.HOST}, PORT={dbc.PORT}), conexión rechazada"""
+                context_dict["err_msg"] = err_msg
+            else:
+                msg = f"Base de Datos '{db}' eliminada con exito"
+                context_dict["msg"] = msg
         else:
-            msg = f"Base de Datos '{db}' eliminada con exito"
-            context_dict["msg"] = msg
+            err_msg = "Operacion cancelada"
+            context_dict["err_msg"] = err_msg
+            
+        return home(request, extra_vars=context_dict)
     
-    return home(request, extra_vars=context_dict)
+    context_dict["delete_db"] = True
+    return render(request, 'ask_confirmation.html', context_dict)
+
 
 # --------------------------------------------------------------------
 # ------------------------- COLLECTION VIEWS -------------------------
@@ -142,9 +138,6 @@ def display_collections(request:HttpRequest, db:str, extra_vars:dict={}):
 
 def add_collection(request:HttpRequest, db:str):
     context_dict = {"db": db}; post_dict = request.POST.dict()
-    print(post_dict)
-    # return create_model(request, "prueba")
-    # Procesamos peticion POST
     if bool(post_dict):
         try:
             collections = dbc.list_collections(db)
@@ -171,7 +164,6 @@ def create_doc_model(request:HttpRequest, db:str, collection:str):
     form_dict = request.POST.dict()
     if bool(form_dict):
         form_dict.pop("csrfmiddlewaretoken")
-        print(form_dict)
         if "add" in form_dict:
             form_dict.pop("add")
             num = 1; tag = f"attr{num}"
@@ -181,7 +173,6 @@ def create_doc_model(request:HttpRequest, db:str, collection:str):
             form_dict[tag] = ""
         elif "remove" in form_dict:
             attr_to_rm = form_dict.pop("remove")
-            print(form_dict)
             if len(form_dict) == 1:
                 err_msg = "La coleccion debe tener al menos algun atributo"
                 context_dict["err_msg"] = err_msg
@@ -207,7 +198,7 @@ def create_doc_model(request:HttpRequest, db:str, collection:str):
                     msg = f"Coleccion '{collection}' añadida con exito"
                     return display_collections(request, db, extra_vars={"msg": msg})
         context_dict["attrs"] = form_dict
-    print(form_dict)
+        
     response = render(request, "create_doc_model.html", context_dict)
     return response
 
@@ -241,18 +232,27 @@ def update_collection(request:HttpRequest, db:str, collection:str):
     return render(request, "update.html", context_dict)
 
 def delete_collection(request:HttpRequest, db:str, collection:str):
-    context_dict = {}
-    try:
-        dbc.remove_collecttion(db, collection)
-    except:
-        err_msg = f"""Fallo al conectarse a la base de datos 
-        (HOST={dbc.HOST}, PORT={dbc.PORT}), conexión rechazada"""
-        context_dict["err_msg"] = err_msg
-    else:
-        msg = f"Coleccion '{collection}' eliminada con exito"
-        context_dict["msg"] = msg
+    context_dict = {"db": db, "collection": collection}
+    conf_dict = clean_form(request.POST)
+    if bool(conf_dict): 
+        if "yes" in conf_dict:
+            try:
+                dbc.remove_collecttion(db, collection)
+            except:
+                err_msg = f"""Fallo al conectarse a la base de datos 
+                (HOST={dbc.HOST}, PORT={dbc.PORT}), conexión rechazada"""
+                context_dict["err_msg"] = err_msg
+            else:
+                msg = f"Coleccion '{collection}' eliminada con exito"
+                context_dict["msg"] = msg
+        else:
+            err_msg = "Operacion cancelada"
+            context_dict["err_msg"] = err_msg
     
-    return display_collections(request, db, extra_vars=context_dict)
+        return display_collections(request, db, extra_vars=context_dict)
+    
+    context_dict["delete_collection"] = True
+    return render(request, 'ask_confirmation.html', context_dict)
 
 # --------------------------------------------------------------------
 # -------------------------- DOCUMENT VIEWS --------------------------
@@ -267,6 +267,30 @@ def display_documents(request:HttpRequest, db:str, collection:str , extra_vars:d
         (HOST={dbc.HOST}, PORT={dbc.PORT}), conexión rechazada"""
         context_dict["err_msg"] = err_msg
     else:
+        # Miramos si hay que eliminar todos los docs
+        clear_form = clean_form(request.POST)
+        if bool(clear_form) and "clear" in clear_form:
+            for doc in docs:
+                dbc.delete_document(db, collection, doc["id"])
+            docs = dbc.get_documents(db, collection)
+            if not bool(docs):
+                msg = "Coleccion vaciada con exito"
+                context_dict["msg"] = msg
+        # if "yes" in clear_form:
+        #     for doc in docs:
+        #         dbc.delete_document(db, collection, doc["id"])
+        #     docs = dbc.get_documents(db, collection)
+        #     if not bool(docs):
+        #         msg = "Coleccion vaciada con exito"
+        #         context_dict["msg"] = msg
+        # elif "no" in clear_form:
+        #     err_msg = "Operacion cancelada"
+        #     context_dict["err_msg"] = err_msg
+        # elif bool(clear_form) and "clear" in clear_form:
+        #     context_dict["delete_docs"] = True
+        #     context_dict["form_path"] = f'/display/{db}/{collection}'
+        #     return render(request, 'ask_confirmation.html', context_dict)
+        # Mostramos los documentos segun si hay o no hay modelo establecido
         model_doc = dbc.get_model(db, collection)
         if bool(model_doc):
             context_dict["model"] = list(model_doc.values())
@@ -277,13 +301,14 @@ def display_documents(request:HttpRequest, db:str, collection:str , extra_vars:d
                 context_dict["docs"] = docs
         else:
             num = 20; context_dict["show_more"] = True
-            form_dict = clean_form(request.GET)
+            form_dict = clean_form(request.GET); docs_len = len(docs)
             if "show_more" in form_dict:
                 num = int(form_dict["show_more"]) + 10
-            if num >= len(docs): 
-                num = len(docs)
+            if num >= docs_len: 
+                num = docs_len
                 context_dict.pop("show_more")
             context_dict["num"] = num
+            context_dict["docs_len"] = docs_len
             
             str_docs = []
             for i, doc in enumerate(docs):
@@ -325,7 +350,6 @@ def update_document(request:HttpRequest, db:str, collection:str, doc_id:str):
     context_dict["doc"] = doc
     
     form_dict = clean_form(request.POST)
-    print(form_dict)
     if bool(form_dict):
         new_doc = form_dict
         try:

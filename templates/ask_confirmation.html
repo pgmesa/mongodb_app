@@ -2,22 +2,24 @@
 {% extends 'reused_templates/base.html' %}
 
 {% block content %}
-  <form action="" method="POST" name="conf_form">
+  <form action="{{form_path}}" method="POST">
     {% csrf_token %}
-    <table>
+    <table style="margin: auto;">
       <tr>
         {% if delete_db %}
           <h3>¿Eliminar Base de Datos '{{db}}'?</h3>
         {% elif delete_collection %}
           <h3>¿Eliminar Coleccion '{{collection}}'?</h3>
+        {% elif delete_docs %}
+          <h3>¿Vaciar Coleccion '{{collection}}'?</h3>
         {% endif %}
       </tr>
       <tr>
-        <td style="text-align: left;">
-          <input type="submit" class="button" value="Yes" name="yes" style="padding: 0px 3px;">
+        <td>
+          <input type="submit" class="button" value="Yes" name="yes">
         </td>
-        <td style="text-align: left;">
-          <input type="submit" class="button" value="No" name="no" style="padding: 0px 3px;">
+        <td>
+          <input type="submit" class="button" value="No" name="no">
         </td>
       </tr>
     </table>  

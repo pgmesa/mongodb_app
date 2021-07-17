@@ -13,7 +13,16 @@
 {% endblock %}
 
 {% block h %}
-  <h2>Documents of collection '{{collection}}'</h2>
+  <h2>Documents of collection '{{collection}}'<br>
+    {% if num %}
+      {{num}}/{{docs_len}}
+    {% else %}
+      <form action="" method="POST" name="clear_form">
+        {% csrf_token %}
+        <input type="submit" class="button" value="Clear all" name="clear">
+      </form>
+    {% endif %}
+  </h2>
 {% endblock %}
 
 {% block content %}
@@ -35,14 +44,14 @@
           {% endfor %}
           <td style="padding: 0 5px;">
             <form action="/update/{{db}}/{{collection}}/{{doc.id}}" method="GET">
-              <button type="submit" class="button">
+              <button type="submit" class="img_button">
                 <img src="{% static 'icons/edit.ico' %}" alt="update" width="35px" height="35px">
               </button>
             </form>
           </td>
           <td style="padding: 0 5px;">
             <form action="/delete/{{db}}/{{collection}}/{{doc.id}}" method="GET">
-              <button type="submit" class="button">
+              <button type="submit" class="img_button">
                 <img src="{% static 'icons/delete.ico' %}" alt="delete" width="35px" height="35px">
               </button>
             </form>
@@ -53,7 +62,7 @@
       {% for doc in docs %}
         <tr>
           <td style="text-align: left;">
-            <pre style="white-space: pre-wrap; word-break: break-all;">{{forloop.counter}}: {{doc}}</pre>
+            <pre style="white-space: pre-wrap; word-break: break-all;"><div style="color: red;">{{forloop.counter}}:</div> {{doc}}</pre>
           </td>
         </tr>
       {% endfor %}
