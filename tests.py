@@ -17,7 +17,8 @@ print(order)
 migrate('Carrera (Ingenieria Biomedica).json',
         "Grades",
         "Carrera (Ingenieria Biomedica)",
-        attrs_order=order)
+        attrs_order=order,
+        reverse=True)
 
 def sort_dict(attrs_order:list, dict_:dict) -> dict:
     sorted_dict = {}

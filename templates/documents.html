@@ -30,7 +30,7 @@
     {% if model and docs %}
       <tr>
         {% for attr in model %}
-          <td style="padding: 10px;">
+          <td style="padding: 10px">
             <h3 style="color: blue;">{{attr}}</h3>
           </td>
         {% endfor %}
@@ -39,7 +39,7 @@
         <tr>
           {% for key, value in doc.items %}
             {% if key != 'id' %}
-              <td>{{value}}</td>
+              <td style="padding: 10px">{{value}}</td>
             {% endif %}
           {% endfor %}
           <td style="padding: 0 5px;">

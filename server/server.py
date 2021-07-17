@@ -298,6 +298,7 @@ def display_documents(request:HttpRequest, db:str, collection:str , extra_vars:d
                 err_msg = "No existen documentos en esta coleccion"
                 context_dict["err_msg"] = err_msg
             else:
+                docs = docs[::-1]
                 context_dict["docs"] = docs
         else:
             num = 20; context_dict["show_more"] = True

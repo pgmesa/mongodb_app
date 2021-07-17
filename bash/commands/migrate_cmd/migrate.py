@@ -9,7 +9,7 @@ def get_migrate_cmd():
     ...
 
 migrate_logger = logging.getLogger(__name__)
-def migrate(file, db, collection, attrs_order:list=None):
+def migrate(file, db, collection, attrs_order:list=None, reverse=False):
     path = BASE_DIR/f'app_db_state/backups/{file}'
     try:
         with open(path, "r") as file:
@@ -25,6 +25,8 @@ def migrate(file, db, collection, attrs_order:list=None):
                 docs = sort_dict(attrs_order, docs)
             dbc.add_document(db, collection, docs)
         elif type(docs) is list:
+            if reverse:
+                docs = docs[::-1]
             for doc in docs:
                 if attrs_order is not None:
                     doc = sort_dict(attrs_order, doc)
