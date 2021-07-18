@@ -9,20 +9,38 @@ from django.shortcuts import render
 from controllers import db_controller as dbc
 
 
-def clean_form(form:QueryDict) -> dict:
+def _clean_form(form:QueryDict) -> dict:
     cleaned = form.dict()
     with suppress(Exception):
         cleaned.pop("csrfmiddlewaretoken")
     
     return cleaned
-        
+
+_extra_vars = {}
+def _get_extra_vars(view_name:str) -> dict:
+    global _extra_vars
+    extra_vars = _extra_vars.get(view_name, None)
+    if extra_vars is None:
+        extra_vars = {}
+    else:
+        _extra_vars.pop(view_name)
+    
+    return extra_vars
+
+def _set_extra_vars(extra_vars:dict, view_name:str) -> None:
+    global _extra_vars
+    ex_extra_vars = _extra_vars.get(view_name, None)
+    if not bool(ex_extra_vars):
+        _extra_vars[view_name] = extra_vars
+    else:
+        for var, value in extra_vars:
+            _extra_vars[view_name][var] = value
+    
 # --------------------------------------------------------------------
 # ------------------------- DATA BASE VIEWS --------------------------
-def home(request:HttpRequest, extra_vars:dict={}) -> HttpResponse:
+def home(request:HttpRequest) -> HttpResponse:
     client_ip = request.META['REMOTE_ADDR']; print(client_ip)
-    context_dict = {}
-    for var, val in extra_vars.items():
-        context_dict[var] = val
+    context_dict = _get_extra_vars("home")
     try:
         dbs = dbc.list_dbs()
     except:
@@ -51,6 +69,9 @@ def add_db(request:HttpRequest):
                 context_dict["err_msg"] = err_msg
             elif new_db in dbs:
                 err_msg = f"Este nombre ya esta usado"
+                context_dict["err_msg"] = err_msg
+            elif " " in new_db:
+                err_msg = f"El nombre no puede contener espacios en blanco"
                 context_dict["err_msg"] = err_msg
             else:
                 return HttpResponseRedirect(f'/add/{new_db}')
@@ -82,13 +103,14 @@ def update_db(request:HttpRequest, db:str):
                 dbc.rename_db(db, new_name)
                 msg = (f"Base de Datos '{db}' actualizada con exito " + 
                         f"-> '{new_name}'")
-                return home(request, extra_vars={"msg": msg})
+                _set_extra_vars({"msg": msg}, "home")
+                return HttpResponseRedirect("/")
             
     context_dict["update_db"] = True
     return render(request, "update.html", context_dict)
 
 def delete_db(request:HttpRequest, db:str):
-    context_dict = {"db": db}; conf_dict = clean_form(request.POST)
+    context_dict = {"db": db}; conf_dict = _clean_form(request.POST)
     if bool(conf_dict): 
         if "yes" in conf_dict:
             try:
@@ -104,18 +126,17 @@ def delete_db(request:HttpRequest, db:str):
             err_msg = "Operacion cancelada"
             context_dict["err_msg"] = err_msg
             
-        return home(request, extra_vars=context_dict)
+        _set_extra_vars(context_dict, "home")
+        return HttpResponseRedirect("/")
     
     context_dict["delete_db"] = True
     return render(request, 'ask_confirmation.html', context_dict)
 
-
 # --------------------------------------------------------------------
 # ------------------------- COLLECTION VIEWS -------------------------
-def display_collections(request:HttpRequest, db:str, extra_vars:dict={}):
-    context_dict = {"db": db};
-    for var, val in extra_vars.items():
-        context_dict[var] = val
+def display_collections(request:HttpRequest, db:str):
+    context_dict = _get_extra_vars("display_collections")
+    context_dict["db"] = db
     try:
         collections = dbc.list_collections(db, all_coll=True)
         app_collections = dbc.list_collections(db)
@@ -164,7 +185,7 @@ def create_doc_model(request:HttpRequest, db:str, collection:str):
     model = dbc.get_model(db, collection)
     if model is not None:
         context_dict["attrs"] = model
-    form_dict = clean_form(request.POST)
+    form_dict = _clean_form(request.POST)
     if bool(form_dict):
         if "add" in form_dict:
             form_dict.pop("add")
@@ -203,11 +224,13 @@ def create_doc_model(request:HttpRequest, db:str, collection:str):
                     dbc.update_model(db, collection, new_model)
                     msg = f"""El modelo de la coleccion '{collection}' ha sido 
                     actualizado con exito"""
-                    return display_documents(request, db, collection, extra_vars={"msg": msg})
+                    _set_extra_vars({"msg": msg}, "display_documents")
+                    return HttpResponseRedirect(f"/display/{db}/{collection}")
                 else:
                     dbc.add_collection(db, collection, new_model)
                     msg = f"Coleccion '{collection}' añadida con exito"
-                    return display_collections(request, db, extra_vars={"msg": msg})
+                    _set_extra_vars({"msg": msg}, "display_collections")
+                    return HttpResponseRedirect(f"/display/{db}")
         context_dict["attrs"] = form_dict
         
     response = render(request, "create_doc_model.html", context_dict)
@@ -237,14 +260,15 @@ def update_collection(request:HttpRequest, db:str, collection:str):
                 dbc.rename_collection(db, collection, new_name)
                 msg = (f"Coleccion '{collection}' actualizada con exito " + 
                         f"-> '{new_name}'")
-                return display_collections(request, db, extra_vars={"msg": msg})
+                _set_extra_vars({"msg": msg}, "display_collections")
+                return HttpResponseRedirect(f"/display/{db}")
     
     context_dict["update_collection"] = True
     return render(request, "update.html", context_dict)
 
 def delete_collection(request:HttpRequest, db:str, collection:str):
     context_dict = {"db": db, "collection": collection}
-    conf_dict = clean_form(request.POST)
+    conf_dict = _clean_form(request.POST)
     if bool(conf_dict): 
         if "yes" in conf_dict:
             try:
@@ -259,8 +283,9 @@ def delete_collection(request:HttpRequest, db:str, collection:str):
         else:
             err_msg = "Operacion cancelada"
             context_dict["err_msg"] = err_msg
-    
-        return display_collections(request, db, extra_vars=context_dict)
+        
+        _set_extra_vars(context_dict, "display_collections")
+        return HttpResponseRedirect(f"/display/{db}")
     
     context_dict["delete_collection"] = True
     return render(request, 'ask_confirmation.html', context_dict)
@@ -269,6 +294,7 @@ def delete_collection(request:HttpRequest, db:str, collection:str):
 # -------------------------- DOCUMENT VIEWS --------------------------
 def display_documents(request:HttpRequest, db:str, collection:str , extra_vars:dict={}):
     context_dict = {"db": db, "collection": collection}
+    extra_vars = _get_extra_vars("display_documents")
     for var, val in extra_vars.items():
         context_dict[var] = val
     try:
@@ -279,28 +305,23 @@ def display_documents(request:HttpRequest, db:str, collection:str , extra_vars:d
         context_dict["err_msg"] = err_msg
     else:
         # Miramos si hay que eliminar todos los docs
-        clear_form = clean_form(request.POST)
-        if bool(clear_form) and "clear" in clear_form:
+        clear_form = _clean_form(request.POST)
+        print(clear_form)
+        if "yes" in clear_form:
+            print("mal")
             for doc in docs:
                 dbc.delete_document(db, collection, doc["id"])
             docs = dbc.get_documents(db, collection)
             if not bool(docs):
                 msg = "Coleccion vaciada con exito"
                 context_dict["msg"] = msg
-        # if "yes" in clear_form:
-        #     for doc in docs:
-        #         dbc.delete_document(db, collection, doc["id"])
-        #     docs = dbc.get_documents(db, collection)
-        #     if not bool(docs):
-        #         msg = "Coleccion vaciada con exito"
-        #         context_dict["msg"] = msg
-        # elif "no" in clear_form:
-        #     err_msg = "Operacion cancelada"
-        #     context_dict["err_msg"] = err_msg
-        # elif bool(clear_form) and "clear" in clear_form:
-        #     context_dict["delete_docs"] = True
-        #     context_dict["form_path"] = f'/display/{db}/{collection}'
-        #     return render(request, 'ask_confirmation.html', context_dict)
+        elif "no" in clear_form:
+            print("bien")
+            err_msg = "Operacion cancelada"
+            context_dict["err_msg"] = err_msg
+        elif bool(clear_form) and "clear" in clear_form:
+            context_dict["delete_docs"] = True
+            return render(request, 'ask_confirmation.html', context_dict)
         # Mostramos los documentos segun si hay o no hay modelo establecido
         model_doc = dbc.get_model(db, collection)
         if bool(model_doc):
@@ -313,7 +334,7 @@ def display_documents(request:HttpRequest, db:str, collection:str , extra_vars:d
                 context_dict["docs"] = docs
         else:
             num = 20; context_dict["show_more"] = True
-            form_dict = clean_form(request.GET); docs_len = len(docs)
+            form_dict = _clean_form(request.GET); docs_len = len(docs)
             if "show_more" in form_dict:
                 num = int(form_dict["show_more"]) + 10
             if num >= docs_len: 
@@ -335,12 +356,13 @@ def display_documents(request:HttpRequest, db:str, collection:str , extra_vars:d
 
 def add_document(request:HttpRequest, db:str, collection:str):
     context_dict = {"db": db, "collection": collection}
-    form_dict = clean_form(request.POST)
+    form_dict = _clean_form(request.POST)
     if bool(form_dict):
         doc = form_dict
         dbc.add_document(db, collection, doc)
         msg = "Documento añadido con exito"
-        return display_documents(request, db, collection, extra_vars={"msg": msg})
+        _set_extra_vars({"msg": msg}, "display_documents")
+        return HttpResponseRedirect(f"/display/{db}/{collection}")
     else:
         try:
             model = dbc.get_model(db, collection)
@@ -359,7 +381,7 @@ def update_document(request:HttpRequest, db:str, collection:str, doc_id:str):
     doc = dbc.find_doc_by_id(db, collection, doc_id)
     context_dict["doc"] = doc
     
-    form_dict = clean_form(request.POST)
+    form_dict = _clean_form(request.POST)
     if bool(form_dict):
         new_doc = form_dict
         try:
@@ -370,7 +392,8 @@ def update_document(request:HttpRequest, db:str, collection:str, doc_id:str):
             context_dict["err_msg"] = err_msg
         else:
             msg = (f"Documento con id '{doc_id}' actualizado con exito")
-            return display_documents(request, db, collection, extra_vars={"msg": msg})
+            _set_extra_vars({"msg": msg}, "display_documents")
+            return HttpResponseRedirect(f"/display/{db}/{collection}")
     
     context_dict["update_doc"] = True
     return render(request, "update.html", context_dict)
@@ -387,7 +410,8 @@ def delete_document(request:HttpRequest, db:str, collection:str, doc_id:str):
         msg = f"Documento con id '{doc_id}' eliminado con exito"
         context_dict["msg"] = msg
     
-    return display_documents(request, db, collection, extra_vars=context_dict)
+    _set_extra_vars(context_dict, "display_documents")
+    return HttpResponseRedirect(f"/display/{db}/{collection}")
 
 def filter_documents():
     ...
