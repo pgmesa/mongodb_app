@@ -1,4 +1,3 @@
-
 {% extends 'reused_templates/base.html' %}
 
 {% load static %}
@@ -17,16 +16,16 @@
   <table style="margin: auto;">     
     <form action="/doc_model/{{db}}/{{collection}}" method="POST">
       {% csrf_token %}
-      {% for attr, attr_dict in model.items %}
+      {% for attr, value in attrs.items %}
         <tr>
           <td style="padding: 0 5px;">
-            Attribute {{forloop.counter}}: <input type="text" name="{{attr}}" value="{{attr_dict.name}}">
+            Attribute {{forloop.counter}}: <input type="text" name="{{attr}}" value="{{value}}">
           </td>
           <td>
-            <select class="select" name="{{attr}}_type">
-              <option value="str" {% if attr_dict.type == 'str' %}selected{% endif %}>string</option>
-              <option value="int" {% if attr_dict.type == 'int' %}selected{% endif %}>int</option>
-              <option value="float" {% if attr_dict.type == 'float' %}selected{% endif %}>float</option>
+            <select class="select" name="type">
+              <option value="str">string</option>
+              <option value="int">int</option>
+              <option value="float">float</option>
             </select>
           </td>
           <td>
@@ -51,5 +50,3 @@
     </form>
   </table>
 {% endblock %}
-
-

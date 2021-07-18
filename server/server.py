@@ -181,60 +181,143 @@ def add_collection(request:HttpRequest, db:str):
     return render(request, "add.html", context_dict)
     
 def create_doc_model(request:HttpRequest, db:str, collection:str):
-    context_dict = {"db": db, "collection": collection, "attrs":{"attr1": ""}}
-    model = dbc.get_model(db, collection)
-    if model is not None:
-        context_dict["attrs"] = model
+    context_dict = {"db": db, "collection": collection, "model":{"attr1": {"name": "","type": ""}}}
+    ex_model = dbc.get_model(db, collection)
+    if ex_model is not None:
+        context_dict["model"] = ex_model
+    print(ex_model)
+    def process_model_from_form(form:dict) -> dict:
+        attrs = []; types = []; model = {}
+        for inpt in form_dict:
+            if "type" in inpt:
+                types.append(inpt)
+            else:
+                attrs.append(inpt)
+        for attr in attrs:
+            attr_dict = {"name": form_dict[attr], "type": ""}
+            for tp in types:
+                if attr in tp:
+                    attr_dict["type"] = form_dict[tp]
+                    break
+            model[attr] = attr_dict
+        return model
+    
     form_dict = _clean_form(request.POST)
     if bool(form_dict):
         if "add" in form_dict:
             form_dict.pop("add")
-            num = 1; tag = f"attr{num}"
-            while tag in form_dict:
+            model = process_model_from_form(form_dict)
+            num = 1; new_attr = f"attr{num}"
+            while new_attr in model:
                 num += 1
-                tag = f"attr{num}"            
-            form_dict[tag] = ""
+                new_attr = f"attr{num}"            
+            model[new_attr] = {"name": "","type": ""}
         elif "remove" in form_dict:
             attr_to_rm = form_dict.pop("remove")
-            if len(form_dict) == 1:
+            model = process_model_from_form(form_dict)
+            if len(model) == 1:
                 err_msg = "La coleccion debe tener al menos algun atributo"
                 context_dict["err_msg"] = err_msg
             else:
-                form_dict.pop(attr_to_rm)
+                model.pop(attr_to_rm)
         elif "save" in form_dict:
             form_dict.pop("save") 
-            new_model = []
+            submitted_model = process_model_from_form(form_dict)
+            print(submitted_model)
+            attrs_names = []
+            for attr_dict in submitted_model.values():
+                attrs_names.append(attr_dict["name"])
+            print(attrs_names)
             # Realizamos una comprobacion previa de parametros
-            for attr in form_dict:
-                value = form_dict[attr]
-                if value == "id" or value == "_id":
-                    err_msg = f"El nombre de atributo '{value}' no esta permitido"
+            valid_model = {}
+            for attr, attr_dict in submitted_model.items():
+                name = attr_dict["name"]; attrs_names.remove(name)
+                if name == "id" or name == "_id":
+                    err_msg = f"El nombre de atributo '{name}' no esta permitido"
                     context_dict["err_msg"] = err_msg
                     break
-                elif value in new_model:
-                    err_msg = f"El atributo '{value}' esta repetido"
+                elif name in attrs_names:
+                    err_msg = f"El atributo '{name}' esta repetido"
                     context_dict["err_msg"] = err_msg
-                elif value != "":
-                    new_model.append(value)
+                    break
+                elif name != "":
+                    valid_model[attr] = attr_dict
             else:
-                if len(new_model) == 0:
+                print(valid_model)
+                if len(valid_model) == 0:
                     err_msg = "La coleccion debe tener al menos algun atributo no vacio"
                     context_dict["err_msg"] = err_msg
-                elif model is not None:
-                    dbc.update_model(db, collection, new_model)
+                elif ex_model is not None:
+                    dbc.update_model(db, collection, valid_model.values())
                     msg = f"""El modelo de la coleccion '{collection}' ha sido 
                     actualizado con exito"""
                     _set_extra_vars({"msg": msg}, "display_documents")
                     return HttpResponseRedirect(f"/display/{db}/{collection}")
                 else:
-                    dbc.add_collection(db, collection, new_model)
+                    dbc.add_collection(db, collection, valid_model.values())
                     msg = f"Coleccion '{collection}' añadida con exito"
                     _set_extra_vars({"msg": msg}, "display_collections")
                     return HttpResponseRedirect(f"/display/{db}")
-        context_dict["attrs"] = form_dict
-        
+            model = valid_model
+        context_dict["model"] = model
     response = render(request, "create_doc_model.html", context_dict)
     return response
+
+# def create_doc_model(request:HttpRequest, db:str, collection:str):
+#     context_dict = {"db": db, "collection": collection, "attrs":{"attr1": ""}}
+#     model = dbc.get_model(db, collection)
+#     if model is not None:
+#         context_dict["attrs"] = model
+#     form_dict = _clean_form(request.POST)
+#     if bool(form_dict):
+#         if "add" in form_dict:
+#             form_dict.pop("add")
+#             num = 1; tag = f"attr{num}"
+#             while tag in form_dict:
+#                 num += 1
+#                 tag = f"attr{num}"            
+#             form_dict[tag] = ""
+#         elif "remove" in form_dict:
+#             attr_to_rm = form_dict.pop("remove")
+#             if len(form_dict) == 1:
+#                 err_msg = "La coleccion debe tener al menos algun atributo"
+#                 context_dict["err_msg"] = err_msg
+#             else:
+#                 form_dict.pop(attr_to_rm)
+#         elif "save" in form_dict:
+#             form_dict.pop("save") 
+#             new_model = []
+#             # Realizamos una comprobacion previa de parametros
+#             for attr in form_dict:
+#                 value = form_dict[attr]
+#                 if value == "id" or value == "_id":
+#                     err_msg = f"El nombre de atributo '{value}' no esta permitido"
+#                     context_dict["err_msg"] = err_msg
+#                     break
+#                 elif value in new_model:
+#                     err_msg = f"El atributo '{value}' esta repetido"
+#                     context_dict["err_msg"] = err_msg
+#                 elif value != "":
+#                     new_model.append(value)
+#             else:
+#                 if len(new_model) == 0:
+#                     err_msg = "La coleccion debe tener al menos algun atributo no vacio"
+#                     context_dict["err_msg"] = err_msg
+#                 elif model is not None:
+#                     dbc.update_model(db, collection, new_model)
+#                     msg = f"""El modelo de la coleccion '{collection}' ha sido 
+#                     actualizado con exito"""
+#                     _set_extra_vars({"msg": msg}, "display_documents")
+#                     return HttpResponseRedirect(f"/display/{db}/{collection}")
+#                 else:
+#                     dbc.add_collection(db, collection, new_model)
+#                     msg = f"Coleccion '{collection}' añadida con exito"
+#                     _set_extra_vars({"msg": msg}, "display_collections")
+#                     return HttpResponseRedirect(f"/display/{db}")
+#         context_dict["attrs"] = form_dict
+        
+#     response = render(request, "create_doc_model.html", context_dict)
+#     return response
 
 def update_collection(request:HttpRequest, db:str, collection:str):
     context_dict = {"db": db, "collection": collection}

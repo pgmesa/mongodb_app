@@ -65,7 +65,6 @@ def get_model(db_name:str, collection_name:str, with_id=False) -> dict or None:
 def update_model(db_name:str, collection_name:str, new_model:list) -> None:
     old_model = list(get_model(db_name, collection_name).values())
     docs = get_documents(db_name, collection_name)
-    print(docs)
     if old_model is None: return
     # Miramos los atributos nuevos que se han añadido y los que permanecen
     new_model_doc = {}; added_attrs = []
