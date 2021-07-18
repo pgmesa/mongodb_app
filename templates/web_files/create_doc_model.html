@@ -4,12 +4,7 @@
 {% load static %}
 
 {% block td_nav %}
-  {% if add_collection %}
-    <td style="padding: 0 10px;"><a href="/display/{{db}}">{{db}}</a></td>
-    {% if add_doc %}
-      <td style="padding: 0 10px;"><a href="/display/{{db}}/{{collection}}">{{collection}}</a></td>
-    {% endif %}
-  {% endif %}
+  <td style="padding: 0 10px;"><a href="/display/{{db}}">Collections</a></td>
 {% endblock %}
 
 {% block h %}

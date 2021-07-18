@@ -1,5 +1,4 @@
 
-import pymongo
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 
@@ -32,9 +31,12 @@ def drop_db(db_name:str) -> None:
     
 # --------------------------------------------------------------------
 # ----------------------- COLLECTION OPERATIONS ----------------------   
-def add_collection(db_name:str, collection_name:str, model:dict) -> None:
+def add_collection(db_name:str, collection_name:str, model:list) -> None:
     collection = client[db_name][collection_name]
-    collection.insert_one(model)
+    model_dict = {"_id": "model"}
+    for i, attr in enumerate(model):
+        model_dict[f"attr{i+1}"] = attr
+    collection.insert_one(model_dict)
     
 def list_collections(db_name:str, all_coll:bool=False) -> list[str]:
     db = client[db_name]
@@ -60,6 +62,30 @@ def get_model(db_name:str, collection_name:str, with_id=False) -> dict or None:
             model.pop("_id")
     return model
 
+def update_model(db_name:str, collection_name:str, new_model:list) -> None:
+    old_model = list(get_model(db_name, collection_name).values())
+    docs = get_documents(db_name, collection_name)
+    print(docs)
+    if old_model is None: return
+    # Miramos los atributos nuevos que se han añadido y los que permanecen
+    new_model_doc = {}; added_attrs = []
+    for i, attr in enumerate(new_model):
+        new_model_doc[f"attr{i+1}"] = attr
+        if attr not in old_model:
+            added_attrs.append(attr)
+        else:
+            old_model.remove(attr)
+    # Los que sigan estando en old_model es que se han eliminado
+    removed_attrs = old_model 
+    for doc in docs:
+        for attr in added_attrs:
+            doc[attr] = ""
+        for attr in removed_attrs:
+            doc.pop(attr)
+        update_document(db_name, collection_name, doc["id"], doc)
+    collection = client[db_name][collection_name]
+    collection.replace_one({"_id": "model"}, new_model_doc)
+
 def rename_collection(db_name:str, old_name:str, new_name:str) -> None:
     collection = client[db_name][old_name]
     collection.rename(new_name)
@@ -77,7 +103,7 @@ def get_documents(db_name:str, collection_name:str, queries:dict={}) -> list[dic
     if bool(model) and model in docs:
         docs.remove(model)
     for doc in docs:
-        doc["id"] = doc["_id"]
+        doc["id"] = str(doc["_id"])
         doc.pop("_id")
     return docs
 
@@ -91,9 +117,11 @@ def add_document(db_name:str, collection_name:str, doc:str) -> None:
         doc["_id"] = ObjectId(_id)
     collection.insert_one(doc)
     
-def update_document(db_name:str, collection_name:str, old_doc_id, new_doc:str):
+def update_document(db_name:str, collection_name:str, old_doc_id, new_doc:dict):
     # Actualizamos el documento
     col = client[db_name][collection_name]
+    if "id" in new_doc:
+        new_doc.pop("id")
     col.replace_one({"_id": ObjectId(old_doc_id)}, new_doc)
     
 def delete_document(db_name:str, collection_name:str, doc_id:str) -> None:

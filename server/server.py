@@ -161,9 +161,11 @@ def add_collection(request:HttpRequest, db:str):
     
 def create_doc_model(request:HttpRequest, db:str, collection:str):
     context_dict = {"db": db, "collection": collection, "attrs":{"attr1": ""}}
-    form_dict = request.POST.dict()
+    model = dbc.get_model(db, collection)
+    if model is not None:
+        context_dict["attrs"] = model
+    form_dict = clean_form(request.POST)
     if bool(form_dict):
-        form_dict.pop("csrfmiddlewaretoken")
         if "add" in form_dict:
             form_dict.pop("add")
             num = 1; tag = f"attr{num}"
@@ -179,22 +181,31 @@ def create_doc_model(request:HttpRequest, db:str, collection:str):
             else:
                 form_dict.pop(attr_to_rm)
         elif "save" in form_dict:
-            form_dict.pop("save")
-            if dbc.get_model(db, collection) is not None:
-                err_msg = f"La coleccion '{collection}' ya tiene un modelo creado"
-                context_dict["err_msg"] = err_msg
+            form_dict.pop("save") 
+            new_model = []
+            # Realizamos una comprobacion previa de parametros
+            for attr in form_dict:
+                value = form_dict[attr]
+                if value == "id" or value == "_id":
+                    err_msg = f"El nombre de atributo '{value}' no esta permitido"
+                    context_dict["err_msg"] = err_msg
+                    break
+                elif value in new_model:
+                    err_msg = f"El atributo '{value}' esta repetido"
+                    context_dict["err_msg"] = err_msg
+                elif value != "":
+                    new_model.append(value)
             else:
-                model = {"_id": "model"}; i = 1
-                for attr in form_dict:
-                    value = form_dict[attr]
-                    if value != "":
-                        model[f"attr{i}"] = value
-                        i += 1
-                if len(model) == 1:
+                if len(new_model) == 0:
                     err_msg = "La coleccion debe tener al menos algun atributo no vacio"
                     context_dict["err_msg"] = err_msg
+                elif model is not None:
+                    dbc.update_model(db, collection, new_model)
+                    msg = f"""El modelo de la coleccion '{collection}' ha sido 
+                    actualizado con exito"""
+                    return display_documents(request, db, collection, extra_vars={"msg": msg})
                 else:
-                    dbc.add_collection(db, collection, model)
+                    dbc.add_collection(db, collection, new_model)
                     msg = f"Coleccion '{collection}' añadida con exito"
                     return display_collections(request, db, extra_vars={"msg": msg})
         context_dict["attrs"] = form_dict
@@ -324,10 +335,8 @@ def display_documents(request:HttpRequest, db:str, collection:str , extra_vars:d
 
 def add_document(request:HttpRequest, db:str, collection:str):
     context_dict = {"db": db, "collection": collection}
-    form_dict = request.POST.dict()
-    
+    form_dict = clean_form(request.POST)
     if bool(form_dict):
-        form_dict.pop("csrfmiddlewaretoken")
         doc = form_dict
         dbc.add_document(db, collection, doc)
         msg = "Documento añadido con exito"
