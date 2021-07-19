@@ -59,10 +59,10 @@
     <form action="/add/{{db}}/{{collection}}" method="POST">
       {% csrf_token %}
       <table style="margin: auto;">
-        {% for attr in model %}
+        {% for attr, attr_dict in model.items %}
           <tr>
-            <td style="text-align: left;">{{attr}}:</td>
-            <td><input type="text" name="{{attr}}"></td>
+            <td style="text-align: left;">{{attr_dict.name}} ({{attr_dict.type}}):</td>
+            <td><input type="text" name="{{attr_dict.name}}"></td>
           </tr>
         {% endfor %}
         <tr>

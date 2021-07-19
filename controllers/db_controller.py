@@ -38,10 +38,10 @@ def add_collection(db_name:str, collection_name:str, model:list) -> None:
         model_dict[f"attr{i+1}"] = attr
     collection.insert_one(model_dict)
     
-def list_collections(db_name:str, all_coll:bool=False) -> list[str]:
+def list_collections(db_name:str, only_app_coll:bool=False) -> list[str]:
     db = client[db_name]
     collections = db.list_collection_names()
-    if not all_coll:
+    if only_app_coll:
         filtered = []
         for coll in collections:
             model = get_model(db_name, coll)
@@ -62,25 +62,33 @@ def get_model(db_name:str, collection_name:str, with_id=False) -> dict or None:
             model.pop("_id")
     return model
 
-def update_model(db_name:str, collection_name:str, new_model:list) -> None:
-    old_model = list(get_model(db_name, collection_name).values())
-    docs = get_documents(db_name, collection_name)
+def update_model(db_name:str, collection_name:str, new_model:list, fix_old_models=False) -> None:
+    old_model = get_model(db_name, collection_name)
     if old_model is None: return
+    old_model = list(old_model.values())
+    if fix_old_models:
+        old_model_names = old_model
+    else:
+        old_model_names = []
+        for attr_dict in old_model:
+            old_model_names.append(attr_dict["name"])
+    docs = get_documents(db_name, collection_name)
     # Miramos los atributos nuevos que se han añadido y los que permanecen
     new_model_doc = {}; added_attrs = []
-    for i, attr in enumerate(new_model):
-        new_model_doc[f"attr{i+1}"] = attr
-        if attr not in old_model:
-            added_attrs.append(attr)
+    for i, attr_dict in enumerate(new_model):
+        new_model_doc[f"attr{i+1}"] = attr_dict
+        attr_name = attr_dict["name"]
+        if attr_name not in old_model_names:
+            added_attrs.append(attr_name)
         else:
-            old_model.remove(attr)
+            old_model_names.remove(attr_name)
     # Los que sigan estando en old_model es que se han eliminado
-    removed_attrs = old_model 
+    removed_attrs = old_model_names
     for doc in docs:
-        for attr in added_attrs:
-            doc[attr] = ""
-        for attr in removed_attrs:
-            doc.pop(attr)
+        for attr_name in added_attrs:
+            doc[attr_name] = ""
+        for attr_name in removed_attrs:
+            doc.pop(attr_name)
         update_document(db_name, collection_name, doc["id"], doc)
     collection = client[db_name][collection_name]
     collection.replace_one({"_id": "model"}, new_model_doc)

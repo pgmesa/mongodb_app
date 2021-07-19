@@ -99,6 +99,9 @@ def update_db(request:HttpRequest, db:str):
                 err_msg = ("Ya existe una coleccion en la base de datos " +
                         f"'{db}' con este nombre")
                 context_dict["err_msg"] = err_msg
+            elif " " in new_name:
+                err_msg = f"El nombre no puede contener espacios en blanco"
+                context_dict["err_msg"] = err_msg
             else:
                 dbc.rename_db(db, new_name)
                 msg = (f"Base de Datos '{db}' actualizada con exito " + 
@@ -138,8 +141,8 @@ def display_collections(request:HttpRequest, db:str):
     context_dict = _get_extra_vars("display_collections")
     context_dict["db"] = db
     try:
-        collections = dbc.list_collections(db, all_coll=True)
-        app_collections = dbc.list_collections(db)
+        collections = dbc.list_collections(db)
+        app_collections = dbc.list_collections(db, only_app_coll=True)
     except:
         err_msg = f"""Fallo al conectarse a la base de datos 
         (HOST={dbc.HOST}, PORT={dbc.PORT}), conexión rechazada"""
@@ -175,6 +178,7 @@ def add_collection(request:HttpRequest, db:str):
                 err_msg = f"Este nombre ya esta usado"
                 context_dict["err_msg"] = err_msg
             else:
+                _set_extra_vars({"add_model": True}, "create_doc_model")
                 return HttpResponseRedirect(f'/doc_model/{db}/{new_collection}')
                 
     context_dict["add_collection"] = True
@@ -182,6 +186,9 @@ def add_collection(request:HttpRequest, db:str):
     
 def create_doc_model(request:HttpRequest, db:str, collection:str):
     context_dict = {"db": db, "collection": collection, "model":{"attr1": {"name": "","type": ""}}}
+    extra_vars = _get_extra_vars("create_doc_model")
+    for var, value in extra_vars.items():
+        context_dict[var] = value
     ex_model = dbc.get_model(db, collection)
     if ex_model is not None:
         context_dict["model"] = ex_model
@@ -223,31 +230,29 @@ def create_doc_model(request:HttpRequest, db:str, collection:str):
         elif "save" in form_dict:
             form_dict.pop("save") 
             submitted_model = process_model_from_form(form_dict)
-            print(submitted_model)
             attrs_names = []
             for attr_dict in submitted_model.values():
                 attrs_names.append(attr_dict["name"])
-            print(attrs_names)
             # Realizamos una comprobacion previa de parametros
-            valid_model = {}
+            valid_model = {}; valid = True
             for attr, attr_dict in submitted_model.items():
                 name = attr_dict["name"]; attrs_names.remove(name)
                 if name == "id" or name == "_id":
                     err_msg = f"El nombre de atributo '{name}' no esta permitido"
                     context_dict["err_msg"] = err_msg
-                    break
-                elif name in attrs_names:
+                    valid = False
+                elif name in attrs_names and name != "":
                     err_msg = f"El atributo '{name}' esta repetido"
                     context_dict["err_msg"] = err_msg
-                    break
-                elif name != "":
-                    valid_model[attr] = attr_dict
-            else:
-                print(valid_model)
-                if len(valid_model) == 0:
-                    err_msg = "La coleccion debe tener al menos algun atributo no vacio"
+                    valid = False
+                elif name == "":
+                    err_msg = "No pueden haber atributos vacios"
                     context_dict["err_msg"] = err_msg
-                elif ex_model is not None:
+                    valid = False
+                else:
+                    valid_model[attr] = attr_dict
+            if valid:
+                if ex_model is not None:
                     dbc.update_model(db, collection, valid_model.values())
                     msg = f"""El modelo de la coleccion '{collection}' ha sido 
                     actualizado con exito"""
@@ -258,66 +263,10 @@ def create_doc_model(request:HttpRequest, db:str, collection:str):
                     msg = f"Coleccion '{collection}' añadida con exito"
                     _set_extra_vars({"msg": msg}, "display_collections")
                     return HttpResponseRedirect(f"/display/{db}")
-            model = valid_model
+            model = submitted_model
         context_dict["model"] = model
     response = render(request, "create_doc_model.html", context_dict)
     return response
-
-# def create_doc_model(request:HttpRequest, db:str, collection:str):
-#     context_dict = {"db": db, "collection": collection, "attrs":{"attr1": ""}}
-#     model = dbc.get_model(db, collection)
-#     if model is not None:
-#         context_dict["attrs"] = model
-#     form_dict = _clean_form(request.POST)
-#     if bool(form_dict):
-#         if "add" in form_dict:
-#             form_dict.pop("add")
-#             num = 1; tag = f"attr{num}"
-#             while tag in form_dict:
-#                 num += 1
-#                 tag = f"attr{num}"            
-#             form_dict[tag] = ""
-#         elif "remove" in form_dict:
-#             attr_to_rm = form_dict.pop("remove")
-#             if len(form_dict) == 1:
-#                 err_msg = "La coleccion debe tener al menos algun atributo"
-#                 context_dict["err_msg"] = err_msg
-#             else:
-#                 form_dict.pop(attr_to_rm)
-#         elif "save" in form_dict:
-#             form_dict.pop("save") 
-#             new_model = []
-#             # Realizamos una comprobacion previa de parametros
-#             for attr in form_dict:
-#                 value = form_dict[attr]
-#                 if value == "id" or value == "_id":
-#                     err_msg = f"El nombre de atributo '{value}' no esta permitido"
-#                     context_dict["err_msg"] = err_msg
-#                     break
-#                 elif value in new_model:
-#                     err_msg = f"El atributo '{value}' esta repetido"
-#                     context_dict["err_msg"] = err_msg
-#                 elif value != "":
-#                     new_model.append(value)
-#             else:
-#                 if len(new_model) == 0:
-#                     err_msg = "La coleccion debe tener al menos algun atributo no vacio"
-#                     context_dict["err_msg"] = err_msg
-#                 elif model is not None:
-#                     dbc.update_model(db, collection, new_model)
-#                     msg = f"""El modelo de la coleccion '{collection}' ha sido 
-#                     actualizado con exito"""
-#                     _set_extra_vars({"msg": msg}, "display_documents")
-#                     return HttpResponseRedirect(f"/display/{db}/{collection}")
-#                 else:
-#                     dbc.add_collection(db, collection, new_model)
-#                     msg = f"Coleccion '{collection}' añadida con exito"
-#                     _set_extra_vars({"msg": msg}, "display_collections")
-#                     return HttpResponseRedirect(f"/display/{db}")
-#         context_dict["attrs"] = form_dict
-        
-#     response = render(request, "create_doc_model.html", context_dict)
-#     return response
 
 def update_collection(request:HttpRequest, db:str, collection:str):
     context_dict = {"db": db, "collection": collection}
@@ -389,9 +338,7 @@ def display_documents(request:HttpRequest, db:str, collection:str , extra_vars:d
     else:
         # Miramos si hay que eliminar todos los docs
         clear_form = _clean_form(request.POST)
-        print(clear_form)
         if "yes" in clear_form:
-            print("mal")
             for doc in docs:
                 dbc.delete_document(db, collection, doc["id"])
             docs = dbc.get_documents(db, collection)
@@ -399,7 +346,6 @@ def display_documents(request:HttpRequest, db:str, collection:str , extra_vars:d
                 msg = "Coleccion vaciada con exito"
                 context_dict["msg"] = msg
         elif "no" in clear_form:
-            print("bien")
             err_msg = "Operacion cancelada"
             context_dict["err_msg"] = err_msg
         elif bool(clear_form) and "clear" in clear_form:
@@ -408,7 +354,7 @@ def display_documents(request:HttpRequest, db:str, collection:str , extra_vars:d
         # Mostramos los documentos segun si hay o no hay modelo establecido
         model_doc = dbc.get_model(db, collection)
         if bool(model_doc):
-            context_dict["model"] = list(model_doc.values())
+            context_dict["model"] = model_doc
             if not bool(docs):
                 err_msg = "No existen documentos en esta coleccion"
                 context_dict["err_msg"] = err_msg
@@ -454,7 +400,7 @@ def add_document(request:HttpRequest, db:str, collection:str):
             (HOST={dbc.HOST}, PORT={dbc.PORT}), conexión rechazada"""
             context_dict["err_msg"] = err_msg
         else:
-            context_dict["model"] = model.values()
+            context_dict["model"] = model
     
     context_dict["add_doc"] = True
     return render(request, 'add.html', context_dict)

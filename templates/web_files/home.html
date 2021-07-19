@@ -16,52 +16,39 @@
 {% endblock %}
 
 {% block content %}
-  <table style="width: 100%;">
-    <tr>
-      <td id="c_aside">
-        <aside style="padding: 10px">
-          <table style="width: 100%;">
-            {% if dbs %}
-              {% for db in dbs %}
-                <tr>
-                  <td style="width: 90%; text-align: left; padding: 0px 15px;">
-                    <ul style="list-style-position: inside;">
-                      <li><a href="/display/{{db}}">{{db}}</a></li>
-                    </ul>
-                  </td>
-                  <td style="padding-right:10px;">
-                    <form action="/update/{{db}}" method="GET">
-                      <button type="submit" class="img_button">
-                        <img src="{% static 'icons/edit.ico' %}" 
-                            alt="update" width="35px" height="35px">
-                      </button>
-                    </form>
-                  </td>
-                  <td style="padding-right:10px;">
-                    <form action="/delete/{{db}}" method="GET">
-                      <button type="submit" class="img_button">
-                        <img src="{% static 'icons/delete.ico' %}"
-                            alt="delete" width="35px" height="35px">
-                      </button>
-                    </form>
-                  </td>
-                </tr>
-              {% endfor %}
-            {% else %}
-              <tr>
-                <td>
-                  <p>No database available, Mongodb is empty</p>
-                </td>
-              </tr>
-            {% endif %}
-          </table> 
-        </aside>
-      </td>
-      <td id="c_section">
-        <section style="padding: 10px">
-          <p>Choose which Data Base should the app display</p> 
-        </section>
-      </td>
-    </tr>
+  <table style="margin: auto;">
+    {% if dbs %}
+      {% for db in dbs %}
+        <tr>
+          <td style="text-align: left; padding: 0px 15px;">
+            <ul style="list-style-position: inside;">
+              <li><a href="/display/{{db}}">{{db}}</a></li>
+            </ul>
+          </td>
+          <td style="padding-right:10px;">
+            <form action="/update/{{db}}" method="GET">
+              <button type="submit" class="img_button">
+                <img src="{% static 'icons/edit.ico' %}" 
+                    alt="update" width="35px" height="35px">
+              </button>
+            </form>
+          </td>
+          <td style="padding-right:10px;">
+            <form action="/delete/{{db}}" method="GET">
+              <button type="submit" class="img_button">
+                <img src="{% static 'icons/delete.ico' %}"
+                    alt="delete" width="35px" height="35px">
+              </button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+    {% else %}
+      <tr>
+        <td>
+          <p>No database available, Mongodb is empty</p>
+        </td>
+      </tr>
+    {% endif %}
   </table>
 {% endblock %}
