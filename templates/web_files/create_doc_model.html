@@ -24,6 +24,16 @@
       {% csrf_token %}
       {% for attr, attr_dict in model.items %}
         <tr>
+          <td>
+            <button type="submit" class="button" style="padding: 1px 3px; margin: 0;" name="down" value="{{attr}}">
+              <img src="{% static 'icons/down_arrow.ico' %}" alt="Down" width="25px" height="25px">
+            </button>
+          </td>
+          <td>
+            <button type="submit" class="button" style="padding: 1px 3px; margin: 0;" name="up" value="{{attr}}">
+              <img src="{% static 'icons/up_arrow.ico' %}" alt="Up" width="25px" height="25px">
+            </button>
+          </td>
           <td style="padding: 0 5px;">
             Attribute {{forloop.counter}}: <input type="text" name="{{attr}}" value="{{attr_dict.name}}">
           </td>
@@ -42,16 +52,21 @@
         </tr>
       {% endfor %}
         <tr>
-          <td style="text-align: left;">
-            <button type="submit" class="button" style="padding: 1px 3px; margin: 0;" name="add"> 
-              <img src="{% static 'icons/add.ico' %}" alt="add" width="25px" height="25px">
-            </button>
+          <td></td><td></td>
+          <td>
+            <table style="width: 100%;">
+              <td style="text-align: left;">
+                <button type="submit" class="button" style="padding: 1px 3px; margin: 0;" name="add"> 
+                  <img src="{% static 'icons/add.ico' %}" alt="add" width="25px" height="25px">
+                </button>
+              </td>  
+              <td style="text-align: right;">          
+                <button type="submit" class="button" style="padding: 1px 3px; margin: 0;" name="save"> 
+                  Save
+                </button>
+              </td>
+            </table>
           </td>
-            <td colspan="2" style="text-align: right;">
-              <button type="submit" class="button" style="padding: 1px 3px; margin: 0;" name="save"> 
-                Save
-              </button>
-            </td>
         </tr>
     </form>
   </table>
