@@ -33,7 +33,7 @@ def _set_extra_vars(extra_vars:dict, view_name:str) -> None:
     if not bool(ex_extra_vars):
         _extra_vars[view_name] = extra_vars
     else:
-        for var, value in extra_vars:
+        for var, value in extra_vars.items():
             _extra_vars[view_name][var] = value
     
 # --------------------------------------------------------------------
@@ -64,6 +64,7 @@ def add_db(request:HttpRequest):
             context_dict["err_msg"] = err_msg
         else:
             new_db = post_dict['name']
+            context_dict["db_name"] = new_db
             if new_db == "":
                 err_msg = "Campo nombre obligatorio"
                 context_dict["err_msg"] = err_msg
@@ -171,6 +172,7 @@ def add_collection(request:HttpRequest, db:str):
             context_dict["err_msg"] = err_msg
         else:
             new_collection = post_dict['name']
+            context_dict["collection_name"] = new_collection
             if new_collection == "":
                 err_msg = "Campo nombre obligatorio"
                 context_dict["err_msg"] = err_msg
@@ -178,7 +180,6 @@ def add_collection(request:HttpRequest, db:str):
                 err_msg = f"Este nombre ya esta usado"
                 context_dict["err_msg"] = err_msg
             else:
-                _set_extra_vars({"add_model": True}, "create_doc_model")
                 return HttpResponseRedirect(f'/doc_model/{db}/{new_collection}')
                 
     context_dict["add_collection"] = True
@@ -194,6 +195,9 @@ def create_doc_model(request:HttpRequest, db:str, collection:str):
         context_dict["model"] = ex_model
         if "num_attrs" not in context_dict:
             context_dict["num_attrs"] = len(ex_model)
+    else:
+        if "num_attrs" not in context_dict:
+            context_dict["num_attrs"] = 1
 
     def process_model_from_form(form:dict) -> dict:
         attrs = []; types = []; model = {}
@@ -473,19 +477,30 @@ def update_document(request:HttpRequest, db:str, collection:str, doc_id:str):
     return render(request, "update.html", context_dict)
 
 def delete_document(request:HttpRequest, db:str, collection:str, doc_id:str):
-    context_dict = {}
-    try:
-        dbc.delete_document(db, collection, doc_id)
-    except:
-        err_msg = f"""Fallo al conectarse a la base de datos 
-        (HOST={dbc.HOST}, PORT={dbc.PORT}), conexión rechazada"""
-        context_dict["err_msg"] = err_msg
-    else:
-        msg = f"Documento con id '{doc_id}' eliminado con exito"
-        context_dict["msg"] = msg
+    doc = dbc.find_doc_by_id(db, collection, doc_id)
+    str_doc = json.dumps(doc, indent=4, sort_keys=True)
+    context_dict = {"db": db, "collection": collection, "doc_id":doc_id, "doc": str_doc}
+    conf_dict = _clean_form(request.POST)
+    if bool(conf_dict): 
+        if "yes" in conf_dict:
+            try:
+                dbc.delete_document(db, collection, doc_id)
+            except:
+                err_msg = f"""Fallo al conectarse a la base de datos 
+                (HOST={dbc.HOST}, PORT={dbc.PORT}), conexión rechazada"""
+                context_dict["err_msg"] = err_msg
+            else:
+                msg = f"Documento con id '{doc_id}' eliminado con exito"
+                context_dict["msg"] = msg
+        else:
+            err_msg = "Operacion cancelada"
+            context_dict["err_msg"] = err_msg
+        
+        _set_extra_vars(context_dict, "display_documents")
+        return HttpResponseRedirect(f"/display/{db}/{collection}")
     
-    _set_extra_vars(context_dict, "display_documents")
-    return HttpResponseRedirect(f"/display/{db}/{collection}")
+    context_dict["delete_doc"] = True
+    return render(request, 'ask_confirmation.html', context_dict)
 
 def filter_documents():
     ...

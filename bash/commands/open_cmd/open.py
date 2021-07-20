@@ -1,0 +1,6 @@
+
+def get_open_cmd():
+    ...
+    
+def open_():
+    ...

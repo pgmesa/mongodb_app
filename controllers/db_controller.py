@@ -117,7 +117,7 @@ def get_documents(db_name:str, collection_name:str, queries:dict={}) -> list[dic
         doc.pop("_id")
     return docs
 
-def find_doc_by_id(db_name:str, collection_name:str, _id:str) -> list[dict]:
+def find_doc_by_id(db_name:str, collection_name:str, _id:str) -> dict:
     return get_documents(db_name, collection_name, queries={"_id": ObjectId(_id)})[0]
 
 def add_document(db_name:str, collection_name:str, doc:str) -> None:

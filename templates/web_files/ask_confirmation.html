@@ -7,19 +7,24 @@
     <table style="margin: auto;">
       <tr>
         {% if delete_db %}
-          <h3>¿Eliminar Base de Datos '{{db}}'?</h3>
+          <h3 style="color: blue;">¿Eliminar Base de Datos '{{db}}'?</h3>
         {% elif delete_collection %}
-          <h3>¿Eliminar Coleccion '{{collection}}'?</h3>
+          <h3 style="color: blue;">¿Eliminar Coleccion '{{collection}}'?</h3>
+        {% elif delete_doc %}
+          <h3 style="color: blue;">¿Eliminar Documento con id: '{{doc_id}}'?</h3>
         {% elif delete_docs %}
-          <h3>¿Vaciar Coleccion '{{collection}}'?</h3>
+          <h3 style="color: blue;">¿Vaciar Coleccion '{{collection}}'?</h3>
         {% endif %}
       </tr>
       <tr>
         <td>
           <input type="submit" class="button" value="Yes" name="yes">
-        </td>
-        <td>
           <input type="submit" class="button" value="No" name="no">
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <pre style="white-space: pre-wrap; word-break: break-all;"><br>{{doc}}</pre>
         </td>
       </tr>
     </table>  
