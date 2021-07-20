@@ -1,6 +1,7 @@
 
 import json
 from contextlib import suppress
+import copy
 # django imports
 from django.http import HttpResponse, HttpRequest, HttpResponseRedirect
 from django.http.request import QueryDict
@@ -192,7 +193,7 @@ def create_doc_model(request:HttpRequest, db:str, collection:str):
     ex_model = dbc.get_model(db, collection)
     if ex_model is not None:
         context_dict["model"] = ex_model
-    print(ex_model)
+
     def process_model_from_form(form:dict) -> dict:
         attrs = []; types = []; model = {}
         for inpt in form_dict:
@@ -214,10 +215,7 @@ def create_doc_model(request:HttpRequest, db:str, collection:str):
         if "add" in form_dict:
             form_dict.pop("add")
             model = process_model_from_form(form_dict)
-            num = 1; new_attr = f"attr{num}"
-            while new_attr in model:
-                num += 1
-                new_attr = f"attr{num}"            
+            new_attr = f"attr{len(model)+1}"            
             model[new_attr] = {"name": "","type": ""}
         elif "remove" in form_dict:
             attr_to_rm = form_dict.pop("remove")
@@ -226,7 +224,46 @@ def create_doc_model(request:HttpRequest, db:str, collection:str):
                 err_msg = "La coleccion debe tener al menos algun atributo"
                 context_dict["err_msg"] = err_msg
             else:
-                model.pop(attr_to_rm)
+                num = int(attr_to_rm[4:])
+                cp_model = copy.deepcopy(model)
+                for i, attr in enumerate(cp_model.keys()):
+                    if i == num-1:
+                        model.pop(attr)
+                    elif i > num-1:
+                        value = model.pop(attr)
+                        model[f"attr{i}"] = value
+        elif "up" in form_dict:
+            attr_to_move_up = form_dict.pop("up")
+            model = process_model_from_form(form_dict)
+            num = int(attr_to_move_up[4:])
+            if num > 1:
+                attr_to_move_down = f"attr{num-1}"
+                sorted_model = {}
+                for attr in model:
+                    value = model[attr]
+                    sorted_model[attr] = value
+                    if attr == attr_to_move_up:
+                        old_down = value
+                        old_up = model[attr_to_move_down]
+                        sorted_model[f"attr{num-1}"] = old_down
+                        sorted_model[f"attr{num}"] = old_up
+                model = sorted_model
+        elif "down" in form_dict:
+            attr_to_move_down = form_dict.pop("down")
+            model = process_model_from_form(form_dict)
+            num = int(attr_to_move_down[4:])
+            if num < len(model):
+                attr_to_move_up = f"attr{num+1}"
+                sorted_model = {}
+                for attr in model:
+                    value = model[attr]
+                    sorted_model[attr] = value
+                    if attr == attr_to_move_up:
+                        old_down = value
+                        old_up = model[attr_to_move_down]
+                        sorted_model[f"attr{num}"] = old_down
+                        sorted_model[f"attr{num+1}"] = old_up
+                model = sorted_model
         elif "save" in form_dict:
             form_dict.pop("save") 
             submitted_model = process_model_from_form(form_dict)
@@ -253,17 +290,18 @@ def create_doc_model(request:HttpRequest, db:str, collection:str):
                     valid_model[attr] = attr_dict
             if valid:
                 if ex_model is not None:
-                    dbc.update_model(db, collection, valid_model.values())
+                    dbc.update_model(db, collection, valid_model)
                     msg = f"""El modelo de la coleccion '{collection}' ha sido 
                     actualizado con exito"""
                     _set_extra_vars({"msg": msg}, "display_documents")
                     return HttpResponseRedirect(f"/display/{db}/{collection}")
                 else:
-                    dbc.add_collection(db, collection, valid_model.values())
+                    dbc.add_collection(db, collection, valid_model)
                     msg = f"Coleccion '{collection}' añadida con exito"
                     _set_extra_vars({"msg": msg}, "display_collections")
                     return HttpResponseRedirect(f"/display/{db}")
             model = submitted_model
+        print(model)
         context_dict["model"] = model
     response = render(request, "create_doc_model.html", context_dict)
     return response

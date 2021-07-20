@@ -22,20 +22,23 @@ from bash.commands.migrate_cmd.migrate import migrate
 
 from controllers import db_controller as dbc
 
-def update_old_models(coll_to_fix=None):
-    dbs = dbc.list_dbs()
-    for db in dbs:
-        collections = dbc.list_collections(db)
-        for collection in collections:
-            if collection != coll_to_fix and coll_to_fix is not None: continue
-            model = dbc.get_model(db, collection)
-            if bool(model):
-                if type(model["attr1"]) is not dict:
-                    print("fixed", db, collection)
-                    new_model = {}
-                    for attr, name in model.items():
-                        new_model[attr] = {"name": name, "type": "str"}
-                    dbc.update_model(db, collection, new_model.values(), fix_old_models=True)
+# def update_old_models(coll_to_fix=None):
+#     dbs = dbc.list_dbs()
+#     for db in dbs:
+#         collections = dbc.list_collections(db)
+#         for collection in collections:
+#             if collection != coll_to_fix and coll_to_fix is not None: continue
+#             model = dbc.get_model(db, collection)
+#             if bool(model):
+#                 if type(model["attr1"]) is not dict:
+#                     print("fixed", db, collection)
+#                     new_model = {}
+#                     for attr, name in model.items():
+#                         new_model[attr] = {"name": name, "type": "str"}
+#                     dbc.update_model(db, collection, new_model.values(), fix_old_models=True)
                         
-update_old_models()
+# update_old_models()
+
+a = "attr1"
+print(a[4:])
 
