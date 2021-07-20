@@ -1,7 +1,6 @@
 
 import json
 from contextlib import suppress
-import copy
 # django imports
 from django.http import HttpResponse, HttpRequest, HttpResponseRedirect
 from django.http.request import QueryDict
@@ -193,6 +192,8 @@ def create_doc_model(request:HttpRequest, db:str, collection:str):
     ex_model = dbc.get_model(db, collection)
     if ex_model is not None:
         context_dict["model"] = ex_model
+        if "num_attrs" not in context_dict:
+            context_dict["num_attrs"] = len(ex_model)
 
     def process_model_from_form(form:dict) -> dict:
         attrs = []; types = []; model = {}
@@ -214,8 +215,10 @@ def create_doc_model(request:HttpRequest, db:str, collection:str):
     if bool(form_dict):
         if "add" in form_dict:
             form_dict.pop("add")
+            context_dict["num_attrs"] += 1
+            num_attrs = context_dict["num_attrs"]
             model = process_model_from_form(form_dict)
-            new_attr = f"attr{len(model)+1}"            
+            new_attr = f"attr{num_attrs}"            
             model[new_attr] = {"name": "","type": ""}
         elif "remove" in form_dict:
             attr_to_rm = form_dict.pop("remove")
@@ -224,45 +227,48 @@ def create_doc_model(request:HttpRequest, db:str, collection:str):
                 err_msg = "La coleccion debe tener al menos algun atributo"
                 context_dict["err_msg"] = err_msg
             else:
-                num = int(attr_to_rm[4:])
-                cp_model = copy.deepcopy(model)
-                for i, attr in enumerate(cp_model.keys()):
-                    if i == num-1:
-                        model.pop(attr)
-                    elif i > num-1:
-                        value = model.pop(attr)
-                        model[f"attr{i}"] = value
+                model.pop(attr_to_rm)
         elif "up" in form_dict:
             attr_to_move_up = form_dict.pop("up")
             model = process_model_from_form(form_dict)
-            num = int(attr_to_move_up[4:])
-            if num > 1:
-                attr_to_move_down = f"attr{num-1}"
-                sorted_model = {}
-                for attr in model:
-                    value = model[attr]
-                    sorted_model[attr] = value
-                    if attr == attr_to_move_up:
-                        old_down = value
+            attrs = list(model.keys()); 
+            index_to_move_up = attrs.index(attr_to_move_up)
+            if index_to_move_up > 0:
+                index_to_move_down = index_to_move_up-1
+                attr_to_move_down = attrs[index_to_move_down]
+                sorted_model = {}; i = 0
+                for attr, attr_dict in model.items():
+                    if i == index_to_move_down:
+                        pass
+                    elif i == index_to_move_up:
+                        old_down = attr_dict
                         old_up = model[attr_to_move_down]
-                        sorted_model[f"attr{num-1}"] = old_down
-                        sorted_model[f"attr{num}"] = old_up
+                        sorted_model[attr_to_move_up] = old_down
+                        sorted_model[attr_to_move_down] = old_up
+                    else:
+                        sorted_model[attr] = attr_dict
+                    i += 1
                 model = sorted_model
         elif "down" in form_dict:
             attr_to_move_down = form_dict.pop("down")
             model = process_model_from_form(form_dict)
-            num = int(attr_to_move_down[4:])
-            if num < len(model):
-                attr_to_move_up = f"attr{num+1}"
-                sorted_model = {}
-                for attr in model:
-                    value = model[attr]
-                    sorted_model[attr] = value
-                    if attr == attr_to_move_up:
-                        old_down = value
+            attrs = list(model.keys()); 
+            index_to_move_down = attrs.index(attr_to_move_down)
+            if index_to_move_down < len(model) - 1:
+                index_to_move_up = index_to_move_down+1
+                attr_to_move_up = attrs[index_to_move_up]
+                sorted_model = {}; i = 0
+                for attr, attr_dict in model.items():
+                    if i == index_to_move_down:
+                        pass
+                    elif i == index_to_move_up:
+                        old_down = attr_dict
                         old_up = model[attr_to_move_down]
-                        sorted_model[f"attr{num}"] = old_down
-                        sorted_model[f"attr{num+1}"] = old_up
+                        sorted_model[attr_to_move_up] = old_down
+                        sorted_model[attr_to_move_down] = old_up
+                    else:
+                        sorted_model[attr] = attr_dict
+                    i += 1
                 model = sorted_model
         elif "save" in form_dict:
             form_dict.pop("save") 
@@ -301,7 +307,7 @@ def create_doc_model(request:HttpRequest, db:str, collection:str):
                     _set_extra_vars({"msg": msg}, "display_collections")
                     return HttpResponseRedirect(f"/display/{db}")
             model = submitted_model
-        print(model)
+        _set_extra_vars({"num_attrs": context_dict["num_attrs"]}, "create_doc_model")
         context_dict["model"] = model
     response = render(request, "create_doc_model.html", context_dict)
     return response
@@ -447,6 +453,7 @@ def update_document(request:HttpRequest, db:str, collection:str, doc_id:str):
     context_dict = {"db": db, "collection": collection}
     doc = dbc.find_doc_by_id(db, collection, doc_id)
     context_dict["doc"] = doc
+    context_dict["model"] = dbc.get_model(db, collection)
     
     form_dict = _clean_form(request.POST)
     if bool(form_dict):
