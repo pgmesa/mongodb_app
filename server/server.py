@@ -1,6 +1,7 @@
 
 import json
 from contextlib import suppress
+from typing import Callable
 # django imports
 from django.http import HttpResponse, HttpRequest, HttpResponseRedirect
 from django.http.request import QueryDict
@@ -35,9 +36,25 @@ def _set_extra_vars(extra_vars:dict, view_name:str) -> None:
     else:
         for var, value in extra_vars.items():
             _extra_vars[view_name][var] = value
+
+view_params = {"last_view": None, "redirected": False}
+def _view_inspector(func):
+    def view_inspector(*args, **kwargs):
+        global view_params
+        last_view = view_params["last_view"]
+        if last_view is not func:
+            view_params["redirected"] = True
+        else:
+            view_params["redirected"] = False
+        view_params["last_view"] = func
+        
+        return func(*args, **kwargs)
+            
+    return view_inspector
     
 # --------------------------------------------------------------------
 # ------------------------- DATA BASE VIEWS --------------------------
+@_view_inspector
 def home(request:HttpRequest) -> HttpResponse:
     client_ip = request.META['REMOTE_ADDR']; print(client_ip)
     context_dict = _get_extra_vars("home")
@@ -52,6 +69,7 @@ def home(request:HttpRequest) -> HttpResponse:
     response:HttpResponse = render(request, 'home.html', context_dict)
     return response
 
+@_view_inspector
 def add_db(request:HttpRequest):
     context_dict = {}; post_dict = request.POST.dict()
     
@@ -80,6 +98,7 @@ def add_db(request:HttpRequest):
     context_dict["add_db"] = True
     return render(request, "add.html", context_dict)
 
+@_view_inspector
 def update_db(request:HttpRequest, db:str):
     context_dict = {"db": db}
     form_dict = request.POST.dict()
@@ -113,6 +132,7 @@ def update_db(request:HttpRequest, db:str):
     context_dict["update_db"] = True
     return render(request, "update.html", context_dict)
 
+@_view_inspector
 def delete_db(request:HttpRequest, db:str):
     context_dict = {"db": db}; conf_dict = _clean_form(request.POST)
     if bool(conf_dict): 
@@ -138,6 +158,7 @@ def delete_db(request:HttpRequest, db:str):
 
 # --------------------------------------------------------------------
 # ------------------------- COLLECTION VIEWS -------------------------
+@_view_inspector
 def display_collections(request:HttpRequest, db:str):
     context_dict = _get_extra_vars("display_collections")
     context_dict["db"] = db
@@ -161,6 +182,7 @@ def display_collections(request:HttpRequest, db:str):
     
     return render(request, 'collections.html', context_dict)
 
+@_view_inspector
 def add_collection(request:HttpRequest, db:str):
     context_dict = {"db": db}; post_dict = request.POST.dict()
     if bool(post_dict):
@@ -184,7 +206,8 @@ def add_collection(request:HttpRequest, db:str):
                 
     context_dict["add_collection"] = True
     return render(request, "add.html", context_dict)
-    
+
+@_view_inspector   
 def create_doc_model(request:HttpRequest, db:str, collection:str):
     context_dict = {"db": db, "collection": collection, "model":{"attr1": {"name": "","type": ""}}}
     extra_vars = _get_extra_vars("create_doc_model")
@@ -316,6 +339,7 @@ def create_doc_model(request:HttpRequest, db:str, collection:str):
     response = render(request, "create_doc_model.html", context_dict)
     return response
 
+@_view_inspector
 def update_collection(request:HttpRequest, db:str, collection:str):
     context_dict = {"db": db, "collection": collection}
     form_dict = request.POST.dict()
@@ -346,6 +370,7 @@ def update_collection(request:HttpRequest, db:str, collection:str):
     context_dict["update_collection"] = True
     return render(request, "update.html", context_dict)
 
+@_view_inspector
 def delete_collection(request:HttpRequest, db:str, collection:str):
     context_dict = {"db": db, "collection": collection}
     conf_dict = _clean_form(request.POST)
@@ -372,6 +397,7 @@ def delete_collection(request:HttpRequest, db:str, collection:str):
 
 # --------------------------------------------------------------------
 # -------------------------- DOCUMENT VIEWS --------------------------
+@_view_inspector
 def display_documents(request:HttpRequest, db:str, collection:str , extra_vars:dict={}):
     context_dict = {"db": db, "collection": collection}
     extra_vars = _get_extra_vars("display_documents")
@@ -431,51 +457,89 @@ def display_documents(request:HttpRequest, db:str, collection:str , extra_vars:d
     
     return render(request, 'documents.html', context_dict)
 
+@_view_inspector
 def add_document(request:HttpRequest, db:str, collection:str):
     context_dict = {"db": db, "collection": collection}
+    context_dict["textareas"] = []
+    context_dict["values"] = {}
+    extra_vars = _get_extra_vars('add_document')
+    for var, value in extra_vars.items():
+        context_dict[var] = value
+    if view_params["redirected"]:
+        context_dict["textareas"] = []
+        
     form_dict = _clean_form(request.POST)
     if bool(form_dict):
-        doc = form_dict
-        dbc.add_document(db, collection, doc)
-        msg = "Documento añadido con exito"
-        _set_extra_vars({"msg": msg}, "display_documents")
-        return HttpResponseRedirect(f"/display/{db}/{collection}")
+        if "add" in form_dict:
+            doc = form_dict
+            dbc.add_document(db, collection, doc)
+            msg = "Documento añadido con exito"
+            _set_extra_vars({"msg": msg}, "display_documents")
+            return HttpResponseRedirect(f"/display/{db}/{collection}")
+        elif "textarea" in form_dict:
+            attr = form_dict.pop("textarea")
+            if attr in context_dict["textareas"]:
+                context_dict["textareas"].remove(attr)
+            else:
+                context_dict["textareas"].append(attr)
+            context_dict["values"] = form_dict
+            print(form_dict)
+    try:
+        model = dbc.get_model(db, collection)
+    except:
+        err_msg = f"""Fallo al conectarse a la base de datos 
+        (HOST={dbc.HOST}, PORT={dbc.PORT}), conexión rechazada"""
+        context_dict["err_msg"] = err_msg
     else:
-        try:
-            model = dbc.get_model(db, collection)
-        except:
-            err_msg = f"""Fallo al conectarse a la base de datos 
-            (HOST={dbc.HOST}, PORT={dbc.PORT}), conexión rechazada"""
-            context_dict["err_msg"] = err_msg
-        else:
-            context_dict["model"] = model
-    
+        context_dict["model"] = model
+        
+    _set_extra_vars({"textareas": context_dict["textareas"]}, 'add_document')
     context_dict["add_doc"] = True
     return render(request, 'add.html', context_dict)
 
+@_view_inspector
 def update_document(request:HttpRequest, db:str, collection:str, doc_id:str):
     context_dict = {"db": db, "collection": collection}
+    context_dict["textareas"] = []
+    context_dict["values"] = {}
+    extra_vars = _get_extra_vars('update_document')
+    for var, value in extra_vars.items():
+        context_dict[var] = value
+    if view_params["redirected"]:
+        context_dict["textareas"] = []
     doc = dbc.find_doc_by_id(db, collection, doc_id)
-    context_dict["doc"] = doc
+    context_dict["doc_id"] = doc_id
+    context_dict["values"] = doc
     context_dict["model"] = dbc.get_model(db, collection)
     
     form_dict = _clean_form(request.POST)
     if bool(form_dict):
-        new_doc = form_dict
-        try:
-            dbc.update_document(db, collection, doc_id, new_doc)
-        except IndexError:
-            err_msg = f"""Fallo al conectarse a la base de datos 
-            (HOST={dbc.HOST}, PORT={dbc.PORT}), conexión rechazada"""
-            context_dict["err_msg"] = err_msg
-        else:
-            msg = (f"Documento con id '{doc_id}' actualizado con exito")
-            _set_extra_vars({"msg": msg}, "display_documents")
-            return HttpResponseRedirect(f"/display/{db}/{collection}")
+        if "update" in form_dict:
+            new_doc = form_dict
+            try:
+                dbc.update_document(db, collection, doc_id, new_doc)
+            except IndexError:
+                err_msg = f"""Fallo al conectarse a la base de datos 
+                (HOST={dbc.HOST}, PORT={dbc.PORT}), conexión rechazada"""
+                context_dict["err_msg"] = err_msg
+            else:
+                msg = (f"Documento con id '{doc_id}' actualizado con exito")
+                _set_extra_vars({"msg": msg}, "display_documents")
+                return HttpResponseRedirect(f"/display/{db}/{collection}")
+        elif "textarea" in form_dict:
+            attr = form_dict.pop("textarea")
+            if attr in context_dict["textareas"]:
+                context_dict["textareas"].remove(attr)
+            else:
+                context_dict["textareas"].append(attr)
+            context_dict["values"] = form_dict
+            print(form_dict)
     
+    _set_extra_vars({"textareas": context_dict["textareas"]}, 'update_document')
     context_dict["update_doc"] = True
     return render(request, "update.html", context_dict)
 
+@_view_inspector
 def delete_document(request:HttpRequest, db:str, collection:str, doc_id:str):
     doc = dbc.find_doc_by_id(db, collection, doc_id)
     str_doc = json.dumps(doc, indent=4, sort_keys=True)
@@ -502,9 +566,11 @@ def delete_document(request:HttpRequest, db:str, collection:str, doc_id:str):
     context_dict["delete_doc"] = True
     return render(request, 'ask_confirmation.html', context_dict)
 
+@_view_inspector
 def filter_documents():
     ...
-    
+
+@_view_inspector
 def sort_documents():
     ...
     

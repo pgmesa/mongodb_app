@@ -1,6 +1,8 @@
 
 {% extends 'reused_templates/base.html' %}
 
+{% load static %} {% load custom_filters %}
+
 {% block td_nav %}
   {% if add_collection or add_doc %}
     <td style="padding: 0 10px;">
@@ -62,12 +64,24 @@
         {% for attr, attr_dict in model.items %}
           <tr>
             <td style="text-align: left;">{{attr_dict.name}} ({{attr_dict.type}}):</td>
-            <td><input type="text" name="{{attr_dict.name}}"></td>
+            <td>
+              {% if attr_dict.name in textareas %}
+                <textarea name="{{attr_dict.name}}" style="font-size: 20px;" cols="27" rows="5">{{values|lookup:attr_dict.name}}</textarea>
+              {% else %}
+                <input type="text" name="{{attr_dict.name}}" value="{{values|lookup:attr_dict.name}}">
+              {% endif %}
+            </td>
+            <td>
+              <button type="submit" class="img_button" name="textarea" value="{{attr_dict.name}}">
+                <img src="{% static 'icons/textarea.ico' %}"
+                    alt="description" width="35px" height="35px">
+              </button>
+            </td>
           </tr>
         {% endfor %}
         <tr>
           <td colspan="2" style="text-align: right;">
-            <input type="submit" value="Add" class="button" style="padding: 0 3px;">
+            <input type="submit" name="add" value="Add" class="button" style="padding: 0 3px;">
           </td>
         </tr>
       </table>

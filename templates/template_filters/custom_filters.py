@@ -5,4 +5,4 @@ register = template.Library()
 
 @register.filter
 def lookup(dictionary:dict, key):
-    return dictionary.get(key, None)
+    return dictionary.get(key, "")

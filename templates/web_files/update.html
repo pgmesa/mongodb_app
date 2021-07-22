@@ -1,7 +1,7 @@
 
 {% extends 'reused_templates/base.html' %}
 
-{% load custom_filters %}
+{% load static %} {% load custom_filters %}
 
 {% block td_nav %}
   {% if update_collection or update_doc %}
@@ -58,20 +58,32 @@
       </table>
     </form>
   {% elif update_doc %}
-    <form action="/update/{{db}}/{{collection}}/{{doc.id}}" method="POST">
+    <form action="/update/{{db}}/{{collection}}/{{doc_id}}" method="POST">
       {% csrf_token %}
       <table style="margin: auto;">
         {% for attr_dict in model.values %}
           {% if attr != 'id' %}
             <tr>
               <td style="text-align: left;">{{attr_dict.name}} ({{attr_dict.type}}):</td>
-              <td><input type="text" name="{{attr_dict.name}}" value="{{doc|lookup:attr_dict.name}}"></td>
+              <td>
+                {% if attr_dict.name in textareas %}
+                  <textarea name="{{attr_dict.name}}" style="font-size: 20px;" cols="27" rows="5">{{values|lookup:attr_dict.name}}</textarea>
+                {% else %}
+                  <input type="text" name="{{attr_dict.name}}" value="{{values|lookup:attr_dict.name}}">
+                {% endif %}
+              </td>
+              <td>
+                <button type="submit" class="img_button" name="textarea" value="{{attr_dict.name}}">
+                  <img src="{% static 'icons/textarea.ico' %}"
+                      alt="description" width="35px" height="35px">
+                </button>
+              </td>
             </tr>
           {% endif %}
         {% endfor %}
         <tr>
           <td colspan="2" style="text-align: right;">
-            <input type="submit" value="Update" class="button" style="padding: 0 3px;">
+            <input type="submit" name="update" value="Update" class="button" style="padding: 0 3px;">
           </td>
         </tr>
       </table>
