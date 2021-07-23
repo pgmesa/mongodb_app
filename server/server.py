@@ -457,6 +457,29 @@ def display_documents(request:HttpRequest, db:str, collection:str , extra_vars:d
     
     return render(request, 'documents.html', context_dict)
 
+def _parse_doc_attrs(model:dict, doc:dict) -> dict:
+    for attr_dict in model.values():
+        name = attr_dict["name"]; str_type = attr_dict["type"]
+        value = doc[name]
+        if value == "": continue
+        if str_type == 'str':
+            type_func = str
+        elif str_type == 'int':
+            type_func = int
+        elif str_type == 'float':
+            type_func = float
+        else:
+            err_msg = f"EL tipo '{str_type}' no es válido, debe ser (str, int o float)"
+            raise Exception(err_msg)
+        try:
+            parsed = type_func(value)
+        except:
+            err_msg = f"""El valor '{name}' no es de tipo '{str_type}'"""
+            raise Exception(err_msg)
+        else:
+            doc[name] = parsed
+    return doc
+
 @_view_inspector
 def add_document(request:HttpRequest, db:str, collection:str):
     context_dict = {"db": db, "collection": collection}
@@ -471,11 +494,19 @@ def add_document(request:HttpRequest, db:str, collection:str):
     form_dict = _clean_form(request.POST)
     if bool(form_dict):
         if "add" in form_dict:
+            form_dict.pop("add")
             doc = form_dict
-            dbc.add_document(db, collection, doc)
-            msg = "Documento añadido con exito"
-            _set_extra_vars({"msg": msg}, "display_documents")
-            return HttpResponseRedirect(f"/display/{db}/{collection}")
+            try:
+                model = dbc.get_model(db, collection)
+                doc = _parse_doc_attrs(model, doc)
+            except Exception as err:
+                context_dict["err_msg"] = str(err)
+            else:
+                dbc.add_document(db, collection, doc)
+                msg = "Documento añadido con exito"
+                _set_extra_vars({"msg": msg}, "display_documents")
+                return HttpResponseRedirect(f"/display/{db}/{collection}")
+            context_dict["values"] = form_dict
         elif "textarea" in form_dict:
             attr = form_dict.pop("textarea")
             if attr in context_dict["textareas"]:
@@ -506,31 +537,38 @@ def update_document(request:HttpRequest, db:str, collection:str, doc_id:str):
         context_dict[var] = value
     if view_params["redirected"]:
         context_dict["textareas"] = []
-    doc = dbc.find_doc_by_id(db, collection, doc_id)
-    context_dict["doc_id"] = doc_id
-    context_dict["values"] = doc
-    context_dict["model"] = dbc.get_model(db, collection)
-    
-    form_dict = _clean_form(request.POST)
-    if bool(form_dict):
-        if "update" in form_dict:
-            new_doc = form_dict
-            try:
-                dbc.update_document(db, collection, doc_id, new_doc)
-            except IndexError:
-                err_msg = f"""Fallo al conectarse a la base de datos 
-                (HOST={dbc.HOST}, PORT={dbc.PORT}), conexión rechazada"""
-                context_dict["err_msg"] = err_msg
-            else:
-                msg = (f"Documento con id '{doc_id}' actualizado con exito")
-                _set_extra_vars({"msg": msg}, "display_documents")
-                return HttpResponseRedirect(f"/display/{db}/{collection}")
-        elif "textarea" in form_dict:
-            attr = form_dict.pop("textarea")
-            if attr in context_dict["textareas"]:
-                context_dict["textareas"].remove(attr)
-            else:
-                context_dict["textareas"].append(attr)
+    try:
+        doc = dbc.find_doc_by_id(db, collection, doc_id)
+    except:
+        err_msg = f"""Fallo al conectarse a la base de datos 
+        (HOST={dbc.HOST}, PORT={dbc.PORT}), conexión rechazada"""
+        context_dict["err_msg"] = err_msg
+    else:
+        context_dict["doc_id"] = doc_id
+        context_dict["values"] = doc
+        context_dict["model"] = dbc.get_model(db, collection)
+        
+        form_dict = _clean_form(request.POST)
+        if bool(form_dict):
+            if "update" in form_dict:
+                form_dict.pop("update")
+                new_doc = form_dict
+                try:
+                    model = dbc.get_model(db, collection)
+                    new_doc = _parse_doc_attrs(model, new_doc)
+                except Exception as err:
+                    context_dict["err_msg"] = str(err)
+                else:
+                    dbc.update_document(db, collection, doc_id, new_doc)
+                    msg = (f"Documento con id '{doc_id}' actualizado con exito")
+                    _set_extra_vars({"msg": msg}, "display_documents")
+                    return HttpResponseRedirect(f"/display/{db}/{collection}")
+            elif "textarea" in form_dict:
+                attr = form_dict.pop("textarea")
+                if attr in context_dict["textareas"]:
+                    context_dict["textareas"].remove(attr)
+                else:
+                    context_dict["textareas"].append(attr)
             context_dict["values"] = form_dict
     
     _set_extra_vars({"textareas": context_dict["textareas"]}, 'update_document')
