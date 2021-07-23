@@ -36,4 +36,6 @@ urlpatterns = [
     path('add/<db>/<collection>', add_document),
     path('update/<db>/<collection>/<doc_id>', update_document),
     path('delete/<db>/<collection>/<doc_id>', delete_document),
+    path('filter/<db>/<collection>', filter_documents),
+    path('sort/<db>/<collection>', sort_documents),
 ]

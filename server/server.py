@@ -483,7 +483,6 @@ def add_document(request:HttpRequest, db:str, collection:str):
             else:
                 context_dict["textareas"].append(attr)
             context_dict["values"] = form_dict
-            print(form_dict)
     try:
         model = dbc.get_model(db, collection)
     except:
@@ -533,7 +532,6 @@ def update_document(request:HttpRequest, db:str, collection:str, doc_id:str):
             else:
                 context_dict["textareas"].append(attr)
             context_dict["values"] = form_dict
-            print(form_dict)
     
     _set_extra_vars({"textareas": context_dict["textareas"]}, 'update_document')
     context_dict["update_doc"] = True
@@ -567,11 +565,34 @@ def delete_document(request:HttpRequest, db:str, collection:str, doc_id:str):
     return render(request, 'ask_confirmation.html', context_dict)
 
 @_view_inspector
-def filter_documents():
-    ...
+def filter_documents(request:HttpRequest, db:str, collection:str):
+    context_dict = _get_extra_vars('filter_documents')
+    context_dict.update({"db": db, "collection": collection})
+    try:
+        model = dbc.get_model(db, collection)
+    except:
+        err_msg = f"""Fallo al conectarse a la base de datos 
+        (HOST={dbc.HOST}, PORT={dbc.PORT}), conexión rechazada"""
+        context_dict["err_msg"] = err_msg
+    else:
+        context_dict["model"] = model
+        context_dict["values"] = {}
+    
+    return render(request, 'filter.html', context_dict)
 
 @_view_inspector
-def sort_documents():
-    ...
+def sort_documents(request:HttpRequest, db:str, collection:str):
+    context_dict = _get_extra_vars('sort_documents')
+    context_dict.update({"db": db, "collection": collection})
+    try:
+        model = dbc.get_model(db, collection)
+    except:
+        err_msg = f"""Fallo al conectarse a la base de datos 
+        (HOST={dbc.HOST}, PORT={dbc.PORT}), conexión rechazada"""
+        context_dict["err_msg"] = err_msg
+    else:
+        context_dict["model"] = model
+    
+    return render(request, 'sort.html', context_dict)
     
     

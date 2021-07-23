@@ -1,0 +1,82 @@
+
+{% extends 'reused_templates/base.html' %}
+
+{% load static %} {% load custom_filters %}
+
+{% block td_nav %}
+  <td style="padding: 0 10px;">
+    <a href="/display/{{db}}">Collections</a>
+  </td>
+  <td style="padding: 0 10px;">
+    <a href="/display/{{db}}/{{collection}}">Documents</a>
+  </td>
+{% endblock %}
+
+{% block h %}
+    <h2>Filter documents of '{{collection}}'</h2>
+{% endblock %}
+
+{% block content %}
+  <form action="/filter/{{db}}/{{collection}}" method="POST">
+    {% csrf_token %}
+    <table style="margin: auto;">
+      {% for attr, attr_dict in model.items %}
+        <tr>
+          <td style="text-align: left;">{{attr_dict.name}} ({{attr_dict.type}})</td>
+          <td style="padding: 0px 8px;">
+            {% if attr_dict.type == 'str' %}
+              <select name="str_select" style="font-size: 23px;"">
+                <option value="contains">
+                  contains
+                </option>
+                <option value="equals">
+                  equals
+                </option>
+              </select>
+            {% elif attr_dict.type == 'int' or attr_dict.type == 'float'%}
+              <select name="number_select" style="font-size: 23px;">
+                <option value="equals">
+                  =
+                </option>
+                <option value="gt">
+                  >
+                </option>
+                <option value="lt">
+                  <
+                </option>
+                <option value="gte">
+                  >=
+                </option>
+                <option value="lte">
+                  <=
+                </option>
+              </select>
+            {% endif %}
+          </td>
+          <td>
+            {% if attr_dict.name in textareas %}
+              <textarea name="{{attr_dict.name}}" style="font-size: 20px;" cols="27" rows="5">{{values|lookup:attr_dict.name}}</textarea>
+            {% else %}
+              <input type="text" name="{{attr_dict.name}}" value="{{values|lookup:attr_dict.name}}">
+            {% endif %}
+          </td>
+          {% if attr_dict.type == 'str' %} 
+            <td>
+              <button type="submit" class="img_button" name="textarea" value="{{attr_dict.name}}">
+                <img src="{% static 'icons/textarea.ico' %}"
+                    alt="description" width="35px" height="35px">
+              </button>
+            </td>
+          {% else %}
+            <td><div style="height: 40px; width: 40px;"></div></td>
+          {% endif %}
+        </tr>
+      {% endfor %}
+      <tr>
+        <td colspan="3" style="text-align: right;">
+          <input type="submit" name="filter" value="Filter" class="button" style="padding: 0 3px;">
+        </td>
+      </tr>
+    </table>
+  </form>
+{% endblock %}

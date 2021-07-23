@@ -71,12 +71,16 @@
                 <input type="text" name="{{attr_dict.name}}" value="{{values|lookup:attr_dict.name}}">
               {% endif %}
             </td>
-            <td>
-              <button type="submit" class="img_button" name="textarea" value="{{attr_dict.name}}">
-                <img src="{% static 'icons/textarea.ico' %}"
-                    alt="description" width="35px" height="35px">
-              </button>
-            </td>
+            {% if attr_dict.type == 'str' %}
+              <td>
+                <button type="submit" class="img_button" name="textarea" value="{{attr_dict.name}}">
+                  <img src="{% static 'icons/textarea.ico' %}"
+                      alt="description" width="35px" height="35px">
+                </button>
+              </td>
+            {% else %}
+              <td><div style="height: 40px; width: 40px;"></div></td>
+            {% endif %}
           </tr>
         {% endfor %}
         <tr>

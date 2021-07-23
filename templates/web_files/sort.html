@@ -1,0 +1,48 @@
+
+{% extends 'reused_templates/base.html' %}
+
+{% load static %} {% load custom_filters %}
+
+{% block td_nav %}
+  <td style="padding: 0 10px;">
+    <a href="/display/{{db}}">Collections</a>
+  </td>
+  <td style="padding: 0 10px;">
+    <a href="/display/{{db}}/{{collection}}">Documents</a>
+  </td>
+{% endblock %}
+
+{% block h %}
+    <h2>Sort documents of '{{collection}}'</h2>
+{% endblock %}
+
+{% block content %}
+  <form action="/sort/{{db}}/{{collection}}" method="POST">
+    {% csrf_token %}
+    <table style="margin: auto;">
+      {% for attr, attr_dict in model.items %}
+        <tr>
+          <td style="text-align: left;">{{attr_dict.name}} ({{attr_dict.type}})</td>
+          <td style="padding: 2px 8px;">
+            <select name="sort_select" style="font-size: 23px;">
+              <option value="asc">
+                ASC
+              </option>
+              <option value="desc">
+                DESC
+              </option>
+            </select>
+          </td>
+          <td>
+            <input type="checkbox" name="{{attr_dict.name}}" class="checkbox" style="width: 25px;">
+          </td>
+        </tr>
+      {% endfor %}
+      <tr>
+        <td style="text-align: left;">
+          <input type="submit" name="sort" value="Sort" class="button" style="padding: 0px 3px;">
+        </td>
+      </tr>
+    </table>
+  </form>
+{% endblock %}
