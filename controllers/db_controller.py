@@ -1,7 +1,7 @@
 
+import pymongo
 from pymongo import MongoClient
 from bson.objectid import ObjectId
-from django.shortcuts import redirect
 
 PORT = 27017
 HOST = "localhost"
@@ -139,9 +139,21 @@ def remove_collecttion(db_name:str, collection_name:str) -> None:
 
 # --------------------------------------------------------------------
 # ------------------------ DOCUMENT OPERATIONS -----------------------
-def get_documents(db_name:str, collection_name:str, queries:dict={}) -> list[dict]:
+def get_documents(db_name:str, collection_name:str, queries:dict={}, sort_dict:dict={}, invert_sort=False) -> list[dict]:
     collection = client[db_name][collection_name]
-    docs = list(collection.find(queries))
+    if bool(sort_dict):
+        sort_list = []
+        for attr, value in sort_dict.items():
+            if value == 'asc':
+                if invert_sort: operator = pymongo.DESCENDING
+                else: operator = pymongo.ASCENDING
+            elif value == 'desc':
+                if invert_sort: operator = pymongo.ASCENDING
+                else: operator = pymongo.DESCENDING
+            sort_list.append((attr, operator))
+        docs = list(collection.find(queries).sort(sort_list))
+    else:
+        docs = list(collection.find(queries))
     model = get_model(db_name, collection_name, with_id=True)
     if bool(model) and model in docs:
         docs.remove(model)

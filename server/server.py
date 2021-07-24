@@ -104,10 +104,10 @@ def _view_inspector(func):
             f"--> MENSAJE DE ERROR:\n\n({str(err)})")
             _set_extra_vars({"err_msg": err_msg, "conserv_format": True}, 'error')
             return HttpResponseRedirect('/error/')
-        # except Exception as err:
-        #     err_msg = f"ERROR: {err}"
-        #     _set_extra_vars({"err_msg": err_msg, "failed_path": args[0].path_info}, 'error')
-        #     return HttpResponseRedirect('/error/')
+        except Exception as err:
+            err_msg = f"ERROR: {err}"
+            _set_extra_vars({"err_msg": err_msg, "failed_path": args[0].path_info}, 'error')
+            return HttpResponseRedirect('/error/')
     return view_inspector
 
 # --------------------------------------------------------------------
@@ -185,7 +185,8 @@ def update_db(request:HttpRequest, db:str) -> HttpResponse:
             err_msg = f"El nombre no puede contener espacios en blanco"
             context_dict["err_msg"] = err_msg
         else:
-            dbc.rename_db(db, new_name)
+            if new_name != db:
+                dbc.rename_db(db, new_name)
             msg = (f"Base de Datos '{db}' actualizada con exito " + 
                     f"-> '{new_name}'")
             _set_extra_vars({"msg": msg}, "home")
@@ -412,7 +413,8 @@ def update_collection(request:HttpRequest, db:str, collection:str) -> HttpRespon
                     f"'{db}' con este nombre")
             context_dict["err_msg"] = err_msg
         else:
-            dbc.rename_collection(db, collection, new_name)
+            if new_name != collection:
+                dbc.rename_collection(db, collection, new_name)
             msg = (f"Coleccion '{collection}' actualizada con exito " + 
                     f"-> '{new_name}'")
             _set_extra_vars({"msg": msg}, "display_collections")
@@ -461,7 +463,21 @@ def display_documents(request:HttpRequest, db:str, collection:str , extra_vars:d
         if filters is not None:
             queries = filters.get(f"{db}.{collection}", {}).get('queries', {})
         if bool(queries): context_dict["filtered"] = True
-    docs = dbc.get_documents(db, collection, queries=queries)
+    # Miramos si hay algun clasificador que aplicar     
+    sorters = register.load('sorters'); sort_dict = {}  
+    sorter_form = _clean_form(request.GET)
+    if "delete_sorter" in sorter_form:
+        sorters.pop(f"{db}.{collection}")
+        register.update('sorters', sorters)
+    elif "update_sorter" in sorter_form:
+        _set_extra_vars({"update_sorter": True}, 'sort_documents')
+        return HttpResponseRedirect(f'/sort/{db}/{collection}')
+    else:
+        if sorters is not None:
+            sort_dict = sorters.get(f"{db}.{collection}", {})
+        if bool(sort_dict): context_dict["sorted"] = True
+        
+    docs = dbc.get_documents(db, collection, queries=queries, sort_dict=sort_dict, invert_sort=True)
     context_dict["docs"] = docs
     # Miramos si hay que eliminar todos los docs
     clear_form = _clean_form(request.POST)
@@ -652,7 +668,6 @@ def filter_documents(request:HttpRequest, db:str, collection:str) -> HttpRespons
     for var, value in extra_vars.items():
         context_dict[var] = value
     view_params = register.load('view_params')
-    print(view_params)
     if view_params["redirected"]:
         context_dict["textareas"] = []
     
@@ -660,7 +675,6 @@ def filter_documents(request:HttpRequest, db:str, collection:str) -> HttpRespons
     if bool(form_dict):
         if 'filter' in form_dict:
             form_dict.pop('filter')
-            print(form_dict)
             try:
                 filter_dict = _parse_doc_attrs(model, form_dict)
             except Exception as err:
@@ -690,10 +704,38 @@ def filter_documents(request:HttpRequest, db:str, collection:str) -> HttpRespons
 def sort_documents(request:HttpRequest, db:str, collection:str) -> HttpResponse:
     context_dict = _get_extra_vars('sort_documents')
     context_dict.update({"db": db, "collection": collection})
+    if "update_sorter" in context_dict:
+        sorter:dict = register.load('sorters')[f"{db}.{collection}"]
+        context_dict["values"] = sorter
+        context_dict["sort_attrs"] = list(sorter.keys())
+    else:
+        context_dict["values"] = {}
+    if "sort_attrs" not in context_dict:
+        context_dict["sort_attrs"] = []
     
+    form_dict = _clean_form(request.POST)
+    if bool(form_dict):
+        if "plus" in form_dict:
+            attr = form_dict.pop("plus")
+            context_dict["sort_attrs"].append(attr)
+        elif "minus" in form_dict:
+            attr = form_dict.pop("minus")
+            context_dict["sort_attrs"].remove(attr)
+        elif "sort" in form_dict:
+            form_dict.pop("sort"); sorter = form_dict
+            sorters = register.load('sorters')
+            if sorters is None:
+                sorters = {f"{db}.{collection}": sorter}
+                register.add('sorters', sorters)
+            else:
+                sorters[f"{db}.{collection}"] = sorter
+                register.update('sorters', sorters)
+            return HttpResponseRedirect(f'/display/{db}/{collection}')
+        context_dict["values"] = form_dict
+
     model = dbc.get_model(db, collection)
     context_dict["model"] = model
-    
+    _set_extra_vars({"sort_attrs": context_dict["sort_attrs"]}, 'sort_documents')
     return render(request, 'sort.html', context_dict)
     
     

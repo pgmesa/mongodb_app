@@ -1,3 +1,4 @@
+import pymongo
 from controllers.db_controller import get_model
 
 from bash.commands.migrate_cmd.migrate import migrate
@@ -60,3 +61,5 @@ a = {2: "hola"}
 
 a.update({"adios": "luis"})
 print(a)
+
+print(pymongo.ASCENDING)

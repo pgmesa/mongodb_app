@@ -23,19 +23,29 @@
       {% for attr, attr_dict in model.items %}
         <tr>
           <td style="text-align: left;">{{attr_dict.name}} ({{attr_dict.type}})</td>
-          <td style="padding: 2px 8px;">
-            <select name="sort_select" style="font-size: 23px;">
-              <option value="asc">
-                ASC
-              </option>
-              <option value="desc">
-                DESC
-              </option>
-            </select>
-          </td>
-          <td>
-            <input type="checkbox" name="{{attr_dict.name}}" class="checkbox" style="width: 25px;">
-          </td>
+          {% if attr_dict.name not in sort_attrs %}
+            <td>
+              <button type="submit" class="button" style="padding: 1px 3px; margin: 0;" name="plus" value="{{attr_dict.name}}"> 
+                <img src="{% static 'icons/add.ico' %}" alt="add" width="25px" height="25px">
+              </button>
+            </td> 
+          {% else %}
+            <td>
+              <button type="submit" class="button" style="padding: 1px 3px; margin: 0;" name="minus" value="{{attr_dict.name}}"> 
+                <img src="{% static 'icons/minus.ico' %}" alt="add" width="25px" height="25px">
+              </button>
+            </td>
+            <td style="padding: 2px 8px;">
+              <select name="{{attr_dict.name}}" style="font-size: 23px;">
+                <option value="asc" {% if attr_dict.name|lookup2:values == 'asc' %}selected{% endif %}>
+                  ASC
+                </option>
+                <option value="desc" {% if attr_dict.name|lookup2:values == 'desc' %}selected{% endif %}>
+                  DESC
+                </option>
+              </select>
+            </td>
+          {% endif %}
         </tr>
       {% endfor %}
       <tr>
