@@ -1,14 +1,14 @@
 
 import json
 from contextlib import suppress
-from django.http import request
 from pymongo.errors import ServerSelectionTimeoutError
 # django imports
 from django.http import HttpResponse, HttpRequest, HttpResponseRedirect
 from django.http.request import QueryDict
-from django.shortcuts import render, redirect
+from django.shortcuts import render
 # program imports
 from controllers import db_controller as dbc
+from mypy_modules.register import register
 
 
 def _clean_form(form:QueryDict) -> dict:
@@ -18,25 +18,32 @@ def _clean_form(form:QueryDict) -> dict:
     
     return cleaned
 
-_extra_vars = {}
 def _get_extra_vars(view_name:str) -> dict:
-    global _extra_vars
-    extra_vars = _extra_vars.get(view_name, None)
-    if extra_vars is None:
-        extra_vars = {}
-    else:
-        _extra_vars.pop(view_name)
+    extra_vars:dict = register.load("extra_vars")
+    view_extra_vars = {}
+    if extra_vars is not None:
+        v_vars = extra_vars.get(view_name, None)
+        if v_vars is not None:
+            extra_vars.pop(view_name)
+            register.update("extra_vars", extra_vars)
+            view_extra_vars = v_vars
     
-    return extra_vars
+    return view_extra_vars
 
-def _set_extra_vars(extra_vars:dict, view_name:str) -> None:
-    global _extra_vars
-    ex_extra_vars = _extra_vars.get(view_name, None)
-    if not bool(ex_extra_vars):
-        _extra_vars[view_name] = extra_vars
+def _set_extra_vars(view_extra_vars:dict, view_name:str) -> None:
+    extra_vars = register.load("extra_vars")
+    if extra_vars is None:
+        extra_vars = {view_name: view_extra_vars}
+        register.add("extra_vars", extra_vars)
     else:
-        for var, value in extra_vars.items():
-            _extra_vars[view_name][var] = value
+        ex_view_extra_vars = extra_vars.get(view_name, None)
+        if not bool(ex_view_extra_vars):
+            extra_vars[view_name] = view_extra_vars
+        else:
+            for var, value in view_extra_vars.items():
+                extra_vars[view_name][var] = value
+        register.update("extra_vars", extra_vars)
+    
             
 def _parse_doc_attrs(model:dict, doc:dict) -> dict:
     for attr_dict in model.values():
@@ -74,16 +81,20 @@ def _parse_doc_attrs(model:dict, doc:dict) -> dict:
         doc[name] = parsed
     return doc
 
-view_params = {"last_view": None, "redirected": False}
 def _view_inspector(func):
     def view_inspector(*args, **kwargs) -> HttpResponse:
-        global view_params
+        # print("register -->", register.load())
+        view_params = register.load('view_params')
+        if view_params is None:
+            view_params = {"last_view": None, "redirected": False}
+            register.add('view_params', view_params)
         last_view = view_params["last_view"]
-        if last_view is not func:
+        if last_view != func.__name__:
             view_params["redirected"] = True
         else:
             view_params["redirected"] = False
-        view_params["last_view"] = func
+        view_params["last_view"] = func.__name__
+        register.update('view_params', view_params)
         try:
             return func(*args, **kwargs)
         except ServerSelectionTimeoutError as err:
@@ -101,15 +112,11 @@ def _view_inspector(func):
 # --------------------------------------------------------------------
 # --------------------------- ERROR VIEW -----------------------------
 def error(request:HttpRequest) -> HttpResponse:
-    print(_extra_vars)
     context_dict = _get_extra_vars('error')
     if "err_msg" not in context_dict:
-        print(context_dict["failed_path"])
         return HttpResponseRedirect(context_dict["failed_path"])
     
-    print(context_dict["failed_path"])
     _set_extra_vars({"failed_path": context_dict["failed_path"]}, 'error')
-    print(_extra_vars)
     return render(request, 'base.html', context_dict)
     
 # --------------------------------------------------------------------
@@ -497,6 +504,7 @@ def add_document(request:HttpRequest, db:str, collection:str) -> HttpResponse:
     extra_vars = _get_extra_vars('add_document')
     for var, value in extra_vars.items():
         context_dict[var] = value
+    view_params = register.load('view_params')
     if view_params["redirected"]:
         context_dict["textareas"] = []
         
@@ -538,9 +546,10 @@ def update_document(request:HttpRequest, db:str, collection:str, doc_id:str) -> 
     extra_vars = _get_extra_vars('update_document')
     for var, value in extra_vars.items():
         context_dict[var] = value
-        
+    view_params = register.load('view_params')
     if view_params["redirected"]:
         context_dict["textareas"] = []
+        
     doc = dbc.find_doc_by_id(db, collection, doc_id)
     context_dict["doc_id"] = doc_id
     context_dict["values"] = doc

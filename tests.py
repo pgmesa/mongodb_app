@@ -39,7 +39,9 @@ from controllers import db_controller as dbc
                         
 # update_old_models()
 
-a = "N"
 
-print(int(a))
+from mypy_modules.register import register
+from server.server import _get_extra_vars, _set_extra_vars
 
+reg = register.load()
+print(reg)
