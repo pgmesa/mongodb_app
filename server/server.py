@@ -703,6 +703,7 @@ def filter_documents(request:HttpRequest, db:str, collection:str) -> HttpRespons
 @_view_inspector
 def sort_documents(request:HttpRequest, db:str, collection:str) -> HttpResponse:
     context_dict = _get_extra_vars('sort_documents')
+    print(context_dict)
     context_dict.update({"db": db, "collection": collection})
     if "update_sorter" in context_dict:
         sorter:dict = register.load('sorters')[f"{db}.{collection}"]
@@ -710,8 +711,10 @@ def sort_documents(request:HttpRequest, db:str, collection:str) -> HttpResponse:
         context_dict["sort_attrs"] = list(sorter.keys())
     else:
         context_dict["values"] = {}
-    if "sort_attrs" not in context_dict:
-        context_dict["sort_attrs"] = []
+        view_params= register.load('view_params')
+        print(view_params)
+        if "sort_attrs" not in context_dict or view_params["redirected"]:
+            context_dict["sort_attrs"] = []
     
     form_dict = _clean_form(request.POST)
     if bool(form_dict):
