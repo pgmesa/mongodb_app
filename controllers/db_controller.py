@@ -78,7 +78,7 @@ def _get_type(type_name:str):
         type_func = float
     return type_func
 
-def update_model(db_name:str, collection_name:str, new_model:dict) -> None:
+def update_model(db_name:str, collection_name:str, new_model:dict, override_types:bool=False) -> None:
     old_model = get_model(db_name, collection_name)
     docs = get_documents(db_name, collection_name)
     if old_model is None: return
@@ -93,7 +93,7 @@ def update_model(db_name:str, collection_name:str, new_model:dict) -> None:
                 for doc in docs:
                     value = doc.pop(old_name)
                     doc[new_name] = value
-            if old_type != new_type:
+            if old_type != new_type or override_types:
                 for doc in docs:
                     type_func = _get_type(new_type)
                     value = doc[new_name]

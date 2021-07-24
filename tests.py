@@ -39,9 +39,24 @@ from controllers import db_controller as dbc
                         
 # update_old_models()
 
+# def update_types_dbs():
+#     dbs = dbc.list_dbs(only_app_dbs=True)
+#     for db in dbs:
+#         collections = dbc.list_collections(db, only_app_coll=True)
+#         for collection in collections:
+#             model = dbc.get_model(db, collection)
+#             dbc.update_model(db, collection, model, override_types=True)
+#             print(f"coleccion '{collection}' actualizada")
+# update_types_dbs()
 
-from mypy_modules.register import register
-from server.server import _get_extra_vars, _set_extra_vars
 
-reg = register.load()
-print(reg)
+# from mypy_modules.register import register
+# from server.server import _get_extra_vars, _set_extra_vars
+
+# reg = register.load()
+# print(reg)
+
+a = {2: "hola"}
+
+a.update({"adios": "luis"})
+print(a)

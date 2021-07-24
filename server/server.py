@@ -1,5 +1,6 @@
 
 import json
+import copy
 from contextlib import suppress
 from pymongo.errors import ServerSelectionTimeoutError
 # django imports
@@ -43,9 +44,9 @@ def _set_extra_vars(view_extra_vars:dict, view_name:str) -> None:
             for var, value in view_extra_vars.items():
                 extra_vars[view_name][var] = value
         register.update("extra_vars", extra_vars)
-    
             
 def _parse_doc_attrs(model:dict, doc:dict) -> dict:
+    parsed_doc = copy.deepcopy(doc)
     for attr_dict in model.values():
         name = attr_dict["name"]; str_type = attr_dict["type"]
         try:
@@ -78,8 +79,8 @@ def _parse_doc_attrs(model:dict, doc:dict) -> dict:
                 err_msg = f"""El valor del atributo '{name}' -> '{value}' no puede 
                 ser de tipo '{str_type}'"""
                 raise Exception(err_msg)
-        doc[name] = parsed
-    return doc
+        parsed_doc[name] = parsed
+    return parsed_doc
 
 def _view_inspector(func):
     def view_inspector(*args, **kwargs) -> HttpResponse:
@@ -103,10 +104,10 @@ def _view_inspector(func):
             f"--> MENSAJE DE ERROR:\n\n({str(err)})")
             _set_extra_vars({"err_msg": err_msg, "conserv_format": True}, 'error')
             return HttpResponseRedirect('/error/')
-        except Exception as err:
-            err_msg = f"ERROR: {err}"
-            _set_extra_vars({"err_msg": err_msg, "failed_path": args[0].path_info}, 'error')
-            return HttpResponseRedirect('/error/')
+        # except Exception as err:
+        #     err_msg = f"ERROR: {err}"
+        #     _set_extra_vars({"err_msg": err_msg, "failed_path": args[0].path_info}, 'error')
+        #     return HttpResponseRedirect('/error/')
     return view_inspector
 
 # --------------------------------------------------------------------
@@ -447,8 +448,21 @@ def display_documents(request:HttpRequest, db:str, collection:str , extra_vars:d
     extra_vars = _get_extra_vars("display_documents")
     for var, val in extra_vars.items():
         context_dict[var] = val
-
-    docs = dbc.get_documents(db, collection)
+    # Miramos si hay algun filtro que aplicar 
+    filters = register.load('filters'); queries = {}  
+    filter_form = _clean_form(request.GET)
+    if "delete_filter" in filter_form:
+        filters.pop(f"{db}.{collection}")
+        register.update('filters', filters)
+    elif "update_filter" in filter_form:
+        _set_extra_vars({"update_filter": True}, 'filter_documents')
+        return HttpResponseRedirect(f'/filter/{db}/{collection}')
+    else:
+        if filters is not None:
+            queries = filters.get(f"{db}.{collection}", {}).get('queries', {})
+        if bool(queries): context_dict["filtered"] = True
+    docs = dbc.get_documents(db, collection, queries=queries)
+    context_dict["docs"] = docs
     # Miramos si hay que eliminar todos los docs
     clear_form = _clean_form(request.POST)
     if "yes" in clear_form:
@@ -470,6 +484,8 @@ def display_documents(request:HttpRequest, db:str, collection:str , extra_vars:d
         context_dict["model"] = model_doc
         if not bool(docs):
             err_msg = "No existen documentos en esta coleccion"
+            if "filtered" in context_dict:
+                err_msg = "No se han encontrado coincidencias"
             context_dict["err_msg"] = err_msg
         else:
             docs = docs[::-1]
@@ -523,14 +539,14 @@ def add_document(request:HttpRequest, db:str, collection:str) -> HttpResponse:
                 msg = "Documento añadido con exito"
                 _set_extra_vars({"msg": msg}, "display_documents")
                 return HttpResponseRedirect(f"/display/{db}/{collection}")
-            context_dict["values"] = form_dict
         elif "textarea" in form_dict:
             attr = form_dict.pop("textarea")
             if attr in context_dict["textareas"]:
                 context_dict["textareas"].remove(attr)
             else:
                 context_dict["textareas"].append(attr)
-            context_dict["values"] = form_dict
+        context_dict["values"] = form_dict
+        
     model = dbc.get_model(db, collection)
     context_dict["model"] = model
         
@@ -603,15 +619,71 @@ def delete_document(request:HttpRequest, db:str, collection:str, doc_id:str) -> 
     context_dict["delete_doc"] = True
     return render(request, 'ask_confirmation.html', context_dict)
 
+def _form_to_mongo_queries(form_dict:dict, model:dict) -> dict:
+    queries = {}
+    for attr_dict in model.values():
+        name = attr_dict["name"]; tp = attr_dict["type"]
+        operator = form_dict[f"{name}_select"]; value = form_dict[name]
+        if value == "": continue
+        if tp == 'str':
+            if operator == 'equals': query = {name: value}
+            elif operator == 'contains': query = {name: {"$regex": value}}
+        elif tp == 'int' or tp == 'float':
+            if operator == 'eq': query = {name: value}
+            elif operator == 'gt': query = {name: {"$gt": value}}
+            elif operator == 'gte': query = {name: {"$gte": value}}
+            elif operator == 'lt': query = {name: {"$lt": value}}
+            elif operator == 'lte': query = {name: {"$lte": value}}
+        queries.update(query)
+        
+    return queries
+            
 @_view_inspector
 def filter_documents(request:HttpRequest, db:str, collection:str) -> HttpResponse:
     context_dict = _get_extra_vars('filter_documents')
     context_dict.update({"db": db, "collection": collection})
-    
     model = dbc.get_model(db, collection)
     context_dict["model"] = model
-    context_dict["values"] = {}
+    if "update_filter" in context_dict:
+        context_dict["values"] = register.load('filters')[f"{db}.{collection}"]["filter"]
+    else:
+        context_dict["values"] = {}
+    extra_vars = _get_extra_vars('filter_documents')
+    for var, value in extra_vars.items():
+        context_dict[var] = value
+    view_params = register.load('view_params')
+    print(view_params)
+    if view_params["redirected"]:
+        context_dict["textareas"] = []
     
+    form_dict = _clean_form(request.POST)
+    if bool(form_dict):
+        if 'filter' in form_dict:
+            form_dict.pop('filter')
+            print(form_dict)
+            try:
+                filter_dict = _parse_doc_attrs(model, form_dict)
+            except Exception as err:
+                context_dict["err_msg"] = str(err)
+            else:
+                queries = _form_to_mongo_queries(filter_dict, model)
+                filters:dict = register.load('filters')
+                if filters is None:
+                    filters = {f"{db}.{collection}": {"queries":queries, "filter": filter_dict}}
+                    register.add('filters', filters)
+                else:
+                    filters[f"{db}.{collection}"] = {"queries":queries, "filter": filter_dict}
+                    register.update('filters', filters)
+                return HttpResponseRedirect(f'/display/{db}/{collection}')
+        elif 'textarea' in form_dict:
+            attr = form_dict.pop("textarea")
+            if attr in context_dict["textareas"]:
+                context_dict["textareas"].remove(attr)
+            else:
+                context_dict["textareas"].append(attr)
+        context_dict["values"] = form_dict
+                
+    _set_extra_vars({"textareas": context_dict["textareas"]}, 'filter_documents')
     return render(request, 'filter.html', context_dict)
 
 @_view_inspector

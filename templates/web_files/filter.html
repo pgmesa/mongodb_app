@@ -25,29 +25,29 @@
           <td style="text-align: left;">{{attr_dict.name}} ({{attr_dict.type}})</td>
           <td style="padding: 0px 8px;">
             {% if attr_dict.type == 'str' %}
-              <select name="str_select" style="font-size: 23px;"">
-                <option value="contains">
+              <select name="{{attr_dict.name}}_select" style="font-size: 23px;"">
+                <option value="contains"{% if attr_dict.name|addstr:"_select"|lookup2:values == 'contains' %}selected{% endif %}>
                   contains
                 </option>
-                <option value="equals">
+                <option value="equals" {% if attr_dict.name|addstr:"_select"|lookup2:values == 'equals' %}selected{% endif %}>
                   equals
                 </option>
               </select>
             {% elif attr_dict.type == 'int' or attr_dict.type == 'float'%}
-              <select name="number_select" style="font-size: 23px;">
-                <option value="equals">
+              <select name="{{attr_dict.name}}_select" style="font-size: 23px;">
+                <option value="eq" {% if attr_dict.name|addstr:"_select"|lookup2:values == 'eq' %}selected{% endif %}>
                   =
                 </option>
-                <option value="gt">
+                <option value="gt" {% if attr_dict.name|addstr:"_select"|lookup2:values == 'gt' %}selected{% endif %}>
                   >
                 </option>
-                <option value="lt">
+                <option value="lt" {% if attr_dict.name|addstr:"_select"|lookup2:values == 'lt' %}selected{% endif %}>
                   <
                 </option>
-                <option value="gte">
+                <option value="gte" {% if attr_dict.name|addstr:"_select"|lookup2:values == 'gte' %}selected{% endif %}>
                   >=
                 </option>
-                <option value="lte">
+                <option value="lte" {% if attr_dict.name|addstr:"_select"|lookup2:values == 'lte' %}selected{% endif %}>
                   <=
                 </option>
               </select>

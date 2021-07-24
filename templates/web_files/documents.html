@@ -32,12 +32,75 @@
       </form>
     {% endif %}
   </h2>
+  {% if filtered or sorted %}
+    <table style="margin: auto; margin-top: 20px;">
+      <tr>
+        {% if filtered %}
+          <td style="border: 2px solid orange;">
+            <h3 style="color: orange;">Filter Active</h3>
+          </td>
+        {% endif %}
+        {% if sorted %}
+          <td style="border: 2px solid orange;">
+            <h3 style="color: orange; ">Sort Active</h3>
+          </td>
+        {% endif %}
+      </tr>
+      <tr>
+        {% if filtered %}
+          <td>
+            <table style="margin: auto;">
+              <tr>
+                <td style="padding: 0 5px;">
+                  <form action="" method="GET">
+                    <button type="submit" class="img_button" name="update_filter">
+                      <img src="{% static 'icons/edit.ico' %}" alt="Update Filter" width="35px" height="35px">
+                    </button>
+                  </form>
+                </td>
+                <td style="padding: 0 5px;">
+                  <form action="" method="GET">
+                    <button type="submit" class="img_button" name="delete_filter">
+                      <img src="{% static 'icons/delete.ico' %}" alt="delete_filter" width="35px" height="35px">
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            </table>
+          </td>    
+        {% endif %}
+        {% if sorted %}
+          <td>
+            <table style="margin: auto;">
+              <tr>
+                <td style="padding: 0 5px;">
+                  <form action="" method="GET">
+                    <button type="submit" class="img_button" name="update_sort">
+                      <img src="{% static 'icons/edit.ico' %}" alt="Update Sort" width="35px" height="35px">
+                    </button>
+                  </form>
+                </td>
+                <td style="padding: 0 5px;">
+                  <form action="" method="GET">
+                    <button type="submit" class="img_button" name="delete_sort">
+                      <img src="{% static 'icons/delete.ico' %}" alt="Delete Sort" width="35px" height="35px">
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            </table>
+          </td>    
+        {% endif %}
+      </tr>
+    </table>
+  {% endif %}
 {% endblock %}
 
 {% block content %}
   <table style="margin: auto;">
     {% if model and docs %}
       <tr>
+        <td style="color: blue;">Nº</td>
         {% for attr_dict in model.values %}
           <td style="padding: 10px">
             <h3 style="color: blue;">{{attr_dict.name}}</h3>
@@ -45,6 +108,7 @@
         {% endfor %}
       </tr>
       <tr>
+        <td></td>
         {% for attr_dict in model.values %}
           <td style="padding: 10px">
             <h3 style="color: red;">({{attr_dict.type}})</h3>
@@ -53,6 +117,7 @@
       </tr>
       {% for doc in docs %}
         <tr>
+          <td style="color: red;">{{forloop.counter}}.</td>
           {% for attr_dict in model.values %}
             <td style="padding: 10px">{{doc|lookup:attr_dict.name}}</td>
           {% endfor %}
