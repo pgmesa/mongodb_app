@@ -1,5 +1,5 @@
 
-{% extends 'reused_templates/base.html' %}
+{% extends 'base.html' %}
 
 {% load static %}
 
@@ -20,11 +20,19 @@
     {% if dbs %}
       {% for db in dbs %}
         <tr>
-          <td style="text-align: left; padding: 0px 15px;">
-            <ul style="list-style-position: inside;">
-              <li><a href="/display/{{db}}">{{db}}</a></li>
-            </ul>
-          </td>
+          {% if db in app_dbs %}
+            <td style="text-align: left; padding: 0px 15px;">
+              <ul style="list-style-position: inside;">
+                <li><a href="/display/{{db}}">{{db}}</a></li>
+              </ul>
+            </td>
+          {% else %}
+            <td style="text-align: left; padding: 0px 15px;">
+              <ul style="list-style-position: inside;">
+                <li><a href="/display/{{db}}" style="color: red;">{{db}}</a></li>
+              </ul>
+            </td>
+          {% endif %}
           <td style="padding-right:10px;">
             <form action="/update/{{db}}" method="GET">
               <button type="submit" class="img_button">
@@ -43,12 +51,6 @@
           </td>
         </tr>
       {% endfor %}
-    {% else %}
-      <tr>
-        <td>
-          <p>No database available, Mongodb is empty</p>
-        </td>
-      </tr>
     {% endif %}
   </table>
 {% endblock %}

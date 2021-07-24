@@ -20,6 +20,8 @@ from server.server import *
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    # errors
+    path('error/', error),
     # dbs
     path('', home, name="home"),
     path('add/', add_db),

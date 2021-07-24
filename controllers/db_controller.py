@@ -1,6 +1,7 @@
 
 from pymongo import MongoClient
 from bson.objectid import ObjectId
+from django.shortcuts import redirect
 
 PORT = 27017
 HOST = "localhost"
@@ -8,8 +9,14 @@ HOST = "localhost"
 client = MongoClient(host=HOST, port=PORT)
 # --------------------------------------------------------------------
 # ----------------------- DATA BASE OPERATIONS -----------------------
-def list_dbs() -> list[str]:
+def list_dbs(only_app_dbs:bool=False) -> list[str]:
     dbs = client.list_database_names()
+    if only_app_dbs:
+        filtered = []
+        for db in dbs:
+            if bool(list_collections(db, only_app_coll=True)):
+                filtered.append(db)
+            dbs = filtered
     return dbs
 
 def rename_db(old_name:str, new_name:str) -> None:
@@ -62,6 +69,15 @@ def get_model(db_name:str, collection_name:str, with_id=False) -> dict or None:
             model.pop("_id")
     return model
 
+def _get_type(type_name:str):
+    if type_name == 'str':
+        type_func = str
+    elif type_name == 'int':
+        type_func = int
+    elif type_name == 'float':
+        type_func = float
+    return type_func
+
 def update_model(db_name:str, collection_name:str, new_model:dict) -> None:
     old_model = get_model(db_name, collection_name)
     docs = get_documents(db_name, collection_name)
@@ -69,12 +85,29 @@ def update_model(db_name:str, collection_name:str, new_model:dict) -> None:
     # Miramos que atributos antiguos se han eliminado o modificado
     for attr, attr_dict in old_model.items():
         old_name = attr_dict["name"]
+        old_type = attr_dict["type"]
         if attr in new_model:
             new_name = new_model[attr]["name"]
+            new_type = new_model[attr]["type"]
             if old_name != new_name:
                 for doc in docs:
                     value = doc.pop(old_name)
                     doc[new_name] = value
+            if old_type != new_type:
+                for doc in docs:
+                    type_func = _get_type(new_type)
+                    value = doc[new_name]
+                    if value != "":
+                        try:
+                            parsed = type_func(value)
+                        except Exception as err:
+                            if type_func is int:
+                                try:
+                                    parsed = float(value)
+                                    parsed = int(parsed)
+                                except:
+                                    raise err
+                        doc[new_name] = parsed
         else:
             for doc in docs:
                 doc.pop(old_name)    

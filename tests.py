@@ -39,6 +39,7 @@ from controllers import db_controller as dbc
                         
 # update_old_models()
 
-a = "attr1"
-print(a[4:])
+a = "N"
+
+print(int(a))
 

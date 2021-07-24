@@ -52,14 +52,22 @@
           {% block msg %}
             <table style="width: 100%;">
               {% if msg %}
-                <tr>
-                  <td style="color: green;"><h3>{{msg}}</h3></td>
-                </tr>
+                {% if conserv_format %}
+                  <pre style="white-space: pre-wrap; word-break: break-all;"><h3 style="color: green;">{{msg}}</h3></pre>
+                {% else %}
+                  <tr>
+                    <td style="color: green;"><h3>{{msg}}</h3></td>
+                  </tr>
+                {% endif %}
               {% endif %}
               {% if err_msg %}
-                <tr>
-                  <td style="color: red;"><h3>{{err_msg}}</h3></td>
-                </tr>
+                {% if conserv_format %}
+                  <pre style="white-space: pre-wrap; word-break: break-all;"><h3 style="color: red;">{{err_msg}}</h3></pre>
+                {% else %}
+                  <tr>
+                    <td style="color: red;"><h3>{{err_msg}}</h3></td>
+                  </tr>
+                {% endif %}
               {% endif %}
             </table>
           {% endblock %}
