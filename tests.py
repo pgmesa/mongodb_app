@@ -1,7 +1,6 @@
 import pymongo
 from controllers.db_controller import get_model
 
-from bash.commands.migrate_cmd.migrate import migrate
 # print(get_model("grades", "Carrera"))
 
 # order = ["_id",
@@ -57,9 +56,6 @@ from controllers import db_controller as dbc
 # reg = register.load()
 # print(reg)
 
-a = {2: "hola"}
+from configs.settings import BASE_DIR
 
-a.update({"adios": "luis"})
-print(a)
-
-print(pymongo.ASCENDING)
+print('.'/BASE_DIR/'venv/Scripts/activate')
