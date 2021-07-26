@@ -3,6 +3,8 @@
 if "%1" == "__start__" (
     cmd /k "cd /d C:\Users\pablo\Desktop\Pablo\Proyectos Python\Probando Django\mongodb_app\mongoappenv\Scripts & activate & cd /d    C:\Users\pablo\Desktop\Pablo\Proyectos Python\Probando Django\mongodb_app\ & start powershell & python manage.py runserver"
 ) else (
+    @REM No aparece la info del server en la primera powershell porque esa esta ocupada con la que esta ejecutando el main
+    @REM hay o que ejecutar otra o conectar las salidas
     cmd /k "cd /d C:\Users\pablo\Desktop\Pablo\Proyectos Python\Probando Django\mongodb_app & python main.py %*"
 )
 
