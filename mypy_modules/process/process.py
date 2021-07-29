@@ -60,4 +60,6 @@ def shell(order:str, stdout=True, stderr=True) -> str:
         raise ProcessErr(err_msg)
     if stdout:
         return process.stdout.decode()
-    
+
+def Popen(order:str, shell=False) -> None:
+   subprocess.Popen(order, shell=shell) 

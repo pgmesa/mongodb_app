@@ -1,11 +1,14 @@
 @echo off
 
 if "%1" == "__start__" (
-    cmd /k "cd /d C:\Users\pablo\Desktop\Pablo\Proyectos Python\Probando Django\mongodb_app\mongoappenv\Scripts & activate & cd /d    C:\Users\pablo\Desktop\Pablo\Proyectos Python\Probando Django\mongodb_app\ & start powershell & python manage.py runserver"
+    @REM start powershell -noexit -command "cmd /k 'cd /d C:\Users\pablo\Desktop\Pablo\Proyectos Python\Probando Django\mongodb_app\mongoappenv\Scripts & activate &    cd /d C:\Users\pablo\Desktop\Pablo\Proyectos Python\Probando Django\mongodb_app\ & python manage.py runserver'"
+    @REM start powershell -noexit -command "powershell -command 'cd /d C:\Users\pablo\Desktop'; powershell 'commands'"
+    start cmd /k "cd /d C:\Users\pablo\Desktop\Pablo\Proyectos Python\Probando Django\mongodb_app\mongoappenv\Scripts & activate &    cd /d C:\Users\pablo\Desktop\Pablo\Proyectos Python\Probando Django\mongodb_app\ & python manage.py runserver & exit"
 ) else (
     @REM No aparece la info del server en la primera powershell porque esa esta ocupada con la que esta ejecutando el main
     @REM hay o que ejecutar otra o conectar las salidas
-    cmd /k "cd /d C:\Users\pablo\Desktop\Pablo\Proyectos Python\Probando Django\mongodb_app & python main.py %*"
+    cd C:\Users\pablo\Desktop\Pablo\Proyectos Python\Probando Django\mongodb_app
+    python main.py %*
 )
 
 @REM cmd \k "cd /d C:\Users\pablo\Desktop\Pablo\Proyectos Python\Probando Django\mongodb_app"

@@ -13,7 +13,7 @@ def get_launch_cmd() -> Command:
     return launch
 
 def launch(args:list=[], options:dict={}, flags:list=[], nested_cmds:dict={}):
-    # Llamar a .bat para que ejecute la orden
-    open_()
     start()
+    open_()
+    
     
