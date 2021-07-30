@@ -10,7 +10,7 @@ def get_mongoapp_cmd() -> Command:
     allows to interact with the mongoapp
     """
     mongoapp = Command(
-        'main.py', description=msg
+        'mongoapp', description=msg, mandatory_nested_cmd=True
     )
     # ++++++++++++++++++++++++++++++++
     open_cmd = get_open_cmd()

@@ -10,12 +10,12 @@ def get_open_cmd() -> Command:
     open_ = Command(
         'open', description='opens the mongodb app in the explorer'
     )
-    open_.add_flag(Flag("-p"))
     return open_
 
 open_logger = logging.getLogger(__name__)
 def open_(args:list=[], options:dict={}, flags:list=[], nested_cmds:dict={}):
-    outcome = process.shell("start chrome http://localhost:8000")
+    open_logger.info(" Abriendo aplicacion...")
+    outcome = process.run("start chrome http://localhost:8000", shell=True)
     if outcome == 1:
         open_logger.error(" Error al abrir la aplicacion en el navegador")
     else:

@@ -48,7 +48,7 @@ class Cli:
         """
         self.global_flags[flag.name] = flag
         
-    def process_cmdline(self, args:list) -> dict:
+    def process_cmdline(self, sys_argv:list) -> dict:
         """Procesa los argumentos que se pasan como parametro. Informa 
         de si estos son validos o no en base a los comandos y flags 
         que conformen la cli.
@@ -66,11 +66,8 @@ class Cli:
                 hayan pasado como valores (si esque se les ha pasado
                 alguno)
         """
-        processed_line = {}
-        if self.main_cmd.name == args.pop(0):
-            processed_line = self._process_cmd(self.main_cmd, args)
-        else:
-            raise CmdLineError(" El comando main introducido es incorrecto")
+        processed_line = {}; sys_argv.pop(0)
+        processed_line = self._process_cmd(self.main_cmd, sys_argv)
         return processed_line
     
     def _process_cmd(self, cmd:Command, args:list):
@@ -337,11 +334,13 @@ class Cli:
         # ------------------------------------------------------------ 
         if command is None:
             command = self.main_cmd
-        print(paint(
-            f"\n python3 {self.main_cmd} <parameters> <flags> <options> " + 
-              "[command] <parameters> <flags> <options> [command] ...\n",
-              colors.BOLD
-        ))
+        if ".py" in self.main_cmd.name:
+            line = (f"\n python {self.main_cmd} <parameters> <flags> <options> " + 
+              "[command] <parameters> <flags> <options> [command] ...\n")
+        else:
+            line = (f"\n {self.main_cmd} <parameters> <flags> <options> " + 
+              "[command] <parameters> <flags> <options> [command] ...\n")
+        print(paint(line,colors.BOLD))
         first_print_color = colors.WARNING
         # Comando
         description = f" => {command.name} "
@@ -355,6 +354,7 @@ class Cli:
         if all_info: max_iter = None
         print_recursively(command, 0, max_iter=max_iter)
         # Global Flags
+        print() # Linea en blanco
         global_flags = self.global_flags.values()
         if len(global_flags) > 0:
             print(" + " + paint("Global Flags", colors.UNDERLINE) + ":")   
