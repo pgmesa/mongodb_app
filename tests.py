@@ -56,6 +56,7 @@ from controllers import db_controller as dbc
 # reg = register.load()
 # print(reg)
 
-from configs.settings import BASE_DIR
+from commands.reused_code import download
+from commands.upload_cmd.upload import upload
 
-print('.'/BASE_DIR/'venv/Scripts/activate')
+upload()
