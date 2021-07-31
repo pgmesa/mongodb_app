@@ -34,4 +34,7 @@ def mongoapp(args:list=[], options:dict={}, flags:list=[], nested_cmds:dict={}):
     elif "launch" in nested_cmds:
         cmd_info = nested_cmds.pop("launch")
         launch(**cmd_info)
+    elif "download" in nested_cmds:
+        cmd_info = nested_cmds.pop("download")
+        download(**cmd_info)
     
