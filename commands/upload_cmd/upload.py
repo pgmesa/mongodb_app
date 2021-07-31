@@ -11,8 +11,13 @@ from controllers import db_controller as dbc
 from configs.settings import BASE_DIR
 from ..reused_code import download, DDBB_CLOUD_NAME
 
-def get_upload_cmd():
-    ...
+def get_upload_cmd() -> Command:
+    msg = """uploads the mongoapp to (github.com/pgmesa/database)"""
+    upload = Command(
+        'upload', description=msg
+    )
+    
+    return upload
 
 upload_logger = logging.getLogger(__name__)
 def upload(args:list=[]) -> None:
@@ -26,6 +31,7 @@ def upload(args:list=[]) -> None:
     # Metemos la info de mongo en la carpeta
     dbs = dbc.list_dbs(only_app_dbs=True)
     for db in dbs:
+        db = f"'"'{db}'"'"
         collections = dbc.list_collections(db, only_app_coll=True)
         for collection in collections:
             docs = dbc.get_documents(db, collection)
