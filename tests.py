@@ -64,4 +64,4 @@ from commands.restore_cmd.restore import restore
 # dbc.drop_db("Cosas_Varias")
 # dbc.drop_db("Grades")
 # dbc.drop_db("ToDo")
-restore()
+# restore()

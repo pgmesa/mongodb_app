@@ -162,6 +162,9 @@ def get_documents(db_name:str, collection_name:str, queries:dict={},
         for doc in docs:
             doc["id"] = str(doc["_id"])
             doc.pop("_id")
+    else:
+        for doc in docs:
+            doc["_id"] = str(doc["_id"])
     return docs
 
 def find_doc_by_id(db_name:str, collection_name:str, _id:str) -> dict:
