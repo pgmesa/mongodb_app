@@ -9,11 +9,14 @@ from mypy_modules.cli import Command, Flag, Option
 # Imports para la funcion del comando
 from controllers import db_controller as dbc
 from configs.settings import BASE_DIR
-from ..reused_code import download_repo, remove_repo, REPO_NAME, DDBB_CLOUD_NAME
+from ..reused_code import (
+    download_repo, remove_repo, REPO_PATH,
+    REPO_NAME, DDBB_CLOUD_NAME
+)
 
 def get_upload_cmd() -> Command:
     msg = f"""uploads the mongoapp to 
-    (github.com/pgmesa/{REPO_NAME}/{DDBB_CLOUD_NAME})"""
+    ({REPO_PATH}/{REPO_NAME}/{DDBB_CLOUD_NAME})"""
     upload = Command(
         'upload', description=msg
     )

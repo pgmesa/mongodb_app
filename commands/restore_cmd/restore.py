@@ -10,11 +10,13 @@ from mypy_modules.cli import Command, Flag, Option
 # Imports para la funcion del comando
 from controllers import db_controller as dbc
 from configs.settings import BASE_DIR
-from ..reused_code import download_repo, remove_repo, REPO_NAME, DDBB_CLOUD_NAME
-
+from ..reused_code import (
+    download_repo, remove_repo, REPO_PATH,
+    REPO_NAME, DDBB_CLOUD_NAME
+)
 def get_restore_cmd() -> Command:
     msg = f"""restores the last saved mongoapp state in 
-    (github.com/pgmesa/{REPO_NAME}/{DDBB_CLOUD_NAME})"""
+    ({REPO_PATH}/{REPO_NAME}/{DDBB_CLOUD_NAME})"""
     restore = Command(
         'restore', description=msg
     )
@@ -39,7 +41,7 @@ def restore(args:list=[], options:dict={}, flags:list=[], nested_cmds:dict={}):
             dbc.remove_collecttion(db, collection)
     # Guardamos en mongo el estado anterior de la app
     msg = (" Migrando ultimo estado guardado en " + 
-                f"(github.com/pgmesa/{REPO_NAME}/{DDBB_CLOUD_NAME})")
+                f"({REPO_PATH}/{REPO_NAME}/{DDBB_CLOUD_NAME})")
     restore_logger.info(msg)
     files = os.listdir(BASE_DIR/f'{REPO_NAME}')
     if DDBB_CLOUD_NAME in files:
