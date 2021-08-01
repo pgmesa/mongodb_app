@@ -59,6 +59,7 @@ def restore(args:list=[], options:dict={}, flags:list=[], nested_cmds:dict={}):
                     err_msg = ("Fallo al realizar las migraciones, " + 
                         f"fichero no valido. TypeError => {err_type}")
                     restore_logger.error(err_msg)
+                    return
                 else:
                     collection = collection.removesuffix(".json")
                     if collection in existing_collec: continue

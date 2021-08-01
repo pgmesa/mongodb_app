@@ -27,17 +27,19 @@ def get_upload_cmd() -> Command:
 # --------------------------------------------------------------------
 upload_logger = logging.getLogger(__name__)
 def upload(args:list=[], options:dict={}, flags:list=[], nested_cmds:dict={}):
-    # Descargamos la base de datos de github y eliminamos el registro anterior de la
-    # mongoapp para reemplazarlo
+    # Descargamos la base de datos de github y eliminamos el registro 
+    # anterior de la mongoapp para reemplazarlo
     try:
         download_repo()
     except process.ProcessErr as err:
         upload_logger.error(err); return
-    ddbb_path = BASE_DIR/f'{REPO_NAME}'; rel_db_app_path = f'{REPO_NAME}/{DDBB_CLOUD_NAME}'
+    ddbb_path = BASE_DIR/f'{REPO_NAME}'
+    rel_db_app_path = f'{REPO_NAME}/{DDBB_CLOUD_NAME}'
     files = os.listdir(ddbb_path)
     if DDBB_CLOUD_NAME in files:
         try:
-            process.run(f'cd {REPO_NAME} & del /f/q/s "{DDBB_CLOUD_NAME}" & rmdir /q/s "{DDBB_CLOUD_NAME}"', shell=True)
+            process.run(f'cd {REPO_NAME} & del /f/q/s "{DDBB_CLOUD_NAME}" '
+                        + f'& rmdir /q/s "{DDBB_CLOUD_NAME}"', shell=True)
         except process.ProcessErr as err:
             msg = f" Fallo al eliminar carpeta mongoapp para reemplazar -> {err}"
             upload_logger.error(msg) 
@@ -56,7 +58,8 @@ def upload(args:list=[], options:dict={}, flags:list=[], nested_cmds:dict={}):
             with open(path, "w") as file:
                 json.dump(docs, file, indent=4, sort_keys=True)
     # Actualizamos la informacion en github
-    upload_logger.info(f" Actualizando base de datos '{DDBB_CLOUD_NAME}' en github...")
+    msg = f" Actualizando base de datos '{DDBB_CLOUD_NAME}' en github..."
+    upload_logger.info(msg)
     order = f'cd {REPO_NAME}'
     order += ' & git add .'
     order += f' & git commit -m "Actualizando {DDBB_CLOUD_NAME}"'

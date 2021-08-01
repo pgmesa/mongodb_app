@@ -15,12 +15,14 @@ def main():
         if os != "Windows":
             err_msg = f" Este programa no soporta '{os}':OS"
             main_logger.critical(err_msg)
-        main_logger.info(" Programa iniciado")
+            exit(1)
+        print(); main_logger.info(" Programa iniciado")
         mongoapp(**args_processed)
     except CmdLineError as err:
         main_logger.error(f" {err}"); exit(1)
     else:
         main_logger.info(" Programa finalizado correctamente")
+        print()
 
 if __name__ == "__main__":
     main()
