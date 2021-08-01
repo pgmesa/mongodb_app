@@ -12,7 +12,7 @@ from configs.settings import BASE_DIR
 from ..reused_code import download, DDBB_CLOUD_NAME
 
 def get_upload_cmd() -> Command:
-    msg = """uploads the mongoapp to (github.com/pgmesa/database)"""
+    msg = """uploads the mongoapp to (github.com/pgmesa/databases)"""
     upload = Command(
         'upload', description=msg
     )
@@ -20,20 +20,22 @@ def get_upload_cmd() -> Command:
     return upload
 
 upload_logger = logging.getLogger(__name__)
-def upload(args:list=[]) -> None:
+def upload(args:list=[], options:dict={}, flags:list=[], nested_cmds:dict={}):
     # Descargamos la base de datos de github y eliminamos el registro anterior de la
     # mongoapp para reemplazarlo
-    download(); ddbb_path = BASE_DIR/'database'; rel_db_app_path = f'database/{DDBB_CLOUD_NAME}'
+    download(); ddbb_path = BASE_DIR/'databases'; rel_db_app_path = f'databases/{DDBB_CLOUD_NAME}'
     files = os.listdir(ddbb_path)
     if DDBB_CLOUD_NAME in files:
         try:
-            process.run(f'cd database & del /f/q/s "{DDBB_CLOUD_NAME}" & rmdir /q/s "{DDBB_CLOUD_NAME}"', shell=True)
+            process.run(f'cd databases & del /f/q/s "{DDBB_CLOUD_NAME}" & rmdir /q/s "{DDBB_CLOUD_NAME}"', shell=True)
         except process.ProcessErr as err:
             msg = f" Fallo al eliminar carpeta mongoapp para reemplazar -> {err}"
             upload_logger.error(msg) 
             return
     # Metemos la info de mongo en la nueva carpeta (la estamos reemplazando)
-    process.run(f'cd database & mkdir "{DDBB_CLOUD_NAME}"', shell=True)
+    msg = " Descargando documentos de mongodb pertenecientes a la aplicacion..."
+    upload_logger.info(msg)
+    process.run(f'cd databases & mkdir "{DDBB_CLOUD_NAME}"', shell=True)
     dbs = dbc.list_dbs(only_app_dbs=True)
     for db in dbs:
         process.run(f'cd "{rel_db_app_path}" & mkdir "{db}"', shell=True)
@@ -44,7 +46,8 @@ def upload(args:list=[]) -> None:
             with open(path, "w") as file:
                 json.dump(docs, file, indent=4, sort_keys=True)
     # Actualizamos la informacion en github
-    order = f'cd database'
+    upload_logger.info(f" Actualizando base de datos '{DDBB_CLOUD_NAME}' en github...")
+    order = f'cd databases'
     order += ' & git add .'
     order += f' & git commit -m "Actualizando {DDBB_CLOUD_NAME}"'
     order += ' & git push origin main'
@@ -53,10 +56,12 @@ def upload(args:list=[]) -> None:
     except process.ProcessErr as err:
         msg = f" No se ha podido actualizar la informacion en github -> {err}"
         upload_logger.error(msg)
+    else:
+        upload_logger.info(" Cambios actualizados en github con exito")
     
-    # Eliminamos la base de datos anterior descargada (carpeta 'database')
+    # Eliminamos la base de datos anterior descargada (carpeta 'databases')
     try:
-        process.run('del /f/q/s database & rmdir /q/s database', shell=True)
+        process.run('del /f/q/s databases & rmdir /q/s databases', shell=True)
     except process.ProcessErr as err:
-        msg = f" Fallo al eliminar carpeta 'database' descargada de github -> {err}"
+        msg = f" Fallo al eliminar carpeta 'databases' descargada de github -> {err}"
         upload_logger.error(msg)
