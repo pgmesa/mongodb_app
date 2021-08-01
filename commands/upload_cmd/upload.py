@@ -21,19 +21,21 @@ def get_upload_cmd() -> Command:
 
 upload_logger = logging.getLogger(__name__)
 def upload(args:list=[]) -> None:
-    download(); ddbb_path = BASE_DIR/'database'; rel_db_app_path = f"database/'{DDBB_CLOUD_NAME}'"
-    files = os.listdir(ddbb_path)
-    if DDBB_CLOUD_NAME in files: 
-        outcome = process.run(f"cd database & del /f/q/s '{DDBB_CLOUD_NAME}' & rmdir /q/s '{DDBB_CLOUD_NAME}'")
-        if outcome == 1:
-            upload_logger.info(" Fallo al eliminar carpeta mongoapp para reemplazar")
+    download(); ddbb_path = BASE_DIR/'database'; rel_db_app_path = f'database/{DDBB_CLOUD_NAME}'
+    # files = os.listdir(ddbb_path)
+    # if DDBB_CLOUD_NAME in files: 
+    #     outcome = process.run(f"cd database & del /f/q/s '{DDBB_CLOUD_NAME}' & rmdir /q/s '{DDBB_CLOUD_NAME}'", shell=True)
+    #     if outcome == 1:
+    #         upload_logger.info(" Fallo al eliminar carpeta mongoapp para reemplazar")
     
     # Metemos la info de mongo en la carpeta
+    process.run(f'cd database & mkdir "{DDBB_CLOUD_NAME}"', shell=True)
     dbs = dbc.list_dbs(only_app_dbs=True)
     for db in dbs:
-        db = f"'"'{db}'"'"
+        process.run(f'cd "{rel_db_app_path}" & mkdir "{db}"', shell=True)
         collections = dbc.list_collections(db, only_app_coll=True)
         for collection in collections:
             docs = dbc.get_documents(db, collection)
-            with open(BASE_DIR/f"'{rel_db_app_path}'/'{db}'/'{collection}'.json", "w") as file:
+            path = BASE_DIR/f'{rel_db_app_path}/{db}/{collection}.json'
+            with open(path, "w") as file:
                 json.dump(docs, file, indent=4, sort_keys=True)
