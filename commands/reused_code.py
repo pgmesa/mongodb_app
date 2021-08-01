@@ -9,7 +9,7 @@ DDBB_CLOUD_NAME = "mongoapp"
 def download_repo():
     # Descargamos el repositorio de bases de datos almacenado en github
     if os.path.exists(REPO_NAME):
-        os.remove(REPO_NAME)
+        remove_repo()
     try:
         process.run(f"git clone https://github.com/pgmesa/{REPO_NAME}", shell=True)
     except process.ProcessErr as err:

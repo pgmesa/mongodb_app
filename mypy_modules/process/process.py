@@ -31,14 +31,14 @@ def run(cmd, stdout=True, stderr=True, shell=False) -> str:
     try:
         process = subprocess.run(cmd, **options, shell=shell)
     except Exception as err:
-        err_msg = f"El comando introducido no es valido: {err}"
+        err_msg = f"El comando introducido no es valido: '{err}'"
         raise ProcessErr(err_msg)
     outcome = process.returncode
     if outcome != 0:
-        err_msg = f" Fallo al ejecutar el comando {cmd}"
+        err_msg = f" Fallo al ejecutar el comando '{cmd}'"
         if stderr:
             err = process.stderr.decode()[:-1]
-            err_msg += f"\nMensaje de error: -> {err}"
+            err_msg += f"\nMensaje de error: -> '{err}'"
         elif stdout:
             err_msg = process.stdout.decode()
         raise ProcessErr(err_msg)

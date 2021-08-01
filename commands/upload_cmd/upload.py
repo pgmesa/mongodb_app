@@ -48,7 +48,7 @@ def upload(args:list=[], options:dict={}, flags:list=[], nested_cmds:dict={}):
         process.run(f'cd "{rel_db_app_path}" & mkdir "{db}"', shell=True)
         collections = dbc.list_collections(db, only_app_coll=True)
         for collection in collections:
-            docs = dbc.get_documents(db, collection)
+            docs = dbc.get_documents(db, collection, with_app_format=False)
             path = BASE_DIR/f'{rel_db_app_path}/{db}/{collection}.json'
             with open(path, "w") as file:
                 json.dump(docs, file, indent=4, sort_keys=True)

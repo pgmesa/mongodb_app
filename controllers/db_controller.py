@@ -139,7 +139,8 @@ def remove_collecttion(db_name:str, collection_name:str) -> None:
 
 # --------------------------------------------------------------------
 # ------------------------ DOCUMENT OPERATIONS -----------------------
-def get_documents(db_name:str, collection_name:str, queries:dict={}, sort_dict:dict={}, invert_sort=False) -> list[dict]:
+def get_documents(db_name:str, collection_name:str, queries:dict={},
+                  sort_dict:dict={}, invert_sort=False, with_app_format=True) -> list[dict]:
     collection = client[db_name][collection_name]
     if bool(sort_dict):
         sort_list = []
@@ -154,12 +155,13 @@ def get_documents(db_name:str, collection_name:str, queries:dict={}, sort_dict:d
         docs = list(collection.find(queries).sort(sort_list))
     else:
         docs = list(collection.find(queries))
-    model = get_model(db_name, collection_name, with_id=True)
-    if bool(model) and model in docs:
-        docs.remove(model)
-    for doc in docs:
-        doc["id"] = str(doc["_id"])
-        doc.pop("_id")
+    if with_app_format:
+        model = get_model(db_name, collection_name, with_id=True)
+        if bool(model) and model in docs:
+            docs.remove(model)
+        for doc in docs:
+            doc["id"] = str(doc["_id"])
+            doc.pop("_id")
     return docs
 
 def find_doc_by_id(db_name:str, collection_name:str, _id:str) -> dict:
@@ -168,7 +170,7 @@ def find_doc_by_id(db_name:str, collection_name:str, _id:str) -> dict:
 def add_document(db_name:str, collection_name:str, doc:str) -> None:
     collection = client[db_name][collection_name]
     _id = doc.get("_id", None)
-    if _id is not None and not isinstance(_id, ObjectId):
+    if _id is not None and not isinstance(_id, ObjectId) and _id != "model":
         doc["_id"] = ObjectId(_id)
     collection.insert_one(doc)
     

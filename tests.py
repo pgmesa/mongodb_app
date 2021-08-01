@@ -56,7 +56,12 @@ from controllers import db_controller as dbc
 # reg = register.load()
 # print(reg)
 
-from commands.reused_code import download
+from commands.reused_code import download_repo, remove_repo
 from commands.upload_cmd.upload import upload
+from commands.restore_cmd.restore import restore
 
-upload()
+# download_repo()
+# dbc.drop_db("Cosas_Varias")
+# dbc.drop_db("Grades")
+# dbc.drop_db("ToDo")
+restore()

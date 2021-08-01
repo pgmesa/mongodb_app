@@ -36,7 +36,7 @@ def restore(args:list=[], options:dict={}, flags:list=[], nested_cmds:dict={}):
     for db in app_mongo_dbs:
         collections = dbc.list_collections(db, only_app_coll=True)
         for collection in collections:
-            dbc.remove_collecttion(collection)
+            dbc.remove_collecttion(db, collection)
     # Guardamos en mongo el estado anterior de la app
     msg = (" Migrando ultimo estado guardado en " + 
                 f"(github.com/pgmesa/{REPO_NAME}/{DDBB_CLOUD_NAME})")
@@ -46,6 +46,7 @@ def restore(args:list=[], options:dict={}, flags:list=[], nested_cmds:dict={}):
         dbs = os.listdir(BASE_DIR/f'{REPO_NAME}/{DDBB_CLOUD_NAME}')
         for db in dbs:
             collections = os.listdir(BASE_DIR/f'{REPO_NAME}/{DDBB_CLOUD_NAME}/{db}')
+            existing_collec = dbc.list_collections(db)
             for collection in collections:
                 path = BASE_DIR/f'{REPO_NAME}/{DDBB_CLOUD_NAME}/{db}/{collection}'
                 try:
@@ -57,12 +58,18 @@ def restore(args:list=[], options:dict={}, flags:list=[], nested_cmds:dict={}):
                         f"fichero no valido. TypeError => {err_type}")
                     restore_logger.error(err_msg)
                 else:
-                    if type(docs) is dict:
-                        doc = docs
-                        dbc.add_document(db, collection, doc)
-                    elif type(docs) is list:
-                        for doc in docs:
+                    collection = collection.removesuffix(".json")
+                    if collection in existing_collec: continue
+                    try:
+                        if type(docs) is dict:
+                            doc = docs
                             dbc.add_document(db, collection, doc)
+                        elif type(docs) is list:
+                            for doc in docs:
+                                dbc.add_document(db, collection, doc)
+                    except Exception as err:
+                        restore_logger.error(err)
+                        break
     # Eliminamos el repositorio descargado anteriormente
     try:
         remove_repo()
