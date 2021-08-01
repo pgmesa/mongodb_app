@@ -26,9 +26,12 @@ def upload(args:list=[]) -> None:
     download(); ddbb_path = BASE_DIR/'database'; rel_db_app_path = f'database/{DDBB_CLOUD_NAME}'
     files = os.listdir(ddbb_path)
     if DDBB_CLOUD_NAME in files:
-        outcome = process.run(f'cd database & del /f/q/s "{DDBB_CLOUD_NAME}" & rmdir /q/s "{DDBB_CLOUD_NAME}"', shell=True)
-        if outcome == 1:
-            upload_logger.info(" Fallo al eliminar carpeta mongoapp para reemplazar")
+        try:
+            process.run(f'cd database & del /f/q/s "{DDBB_CLOUD_NAME}" & rmdir /q/s "{DDBB_CLOUD_NAME}"', shell=True)
+        except process.ProcessErr as err:
+            msg = f" Fallo al eliminar carpeta mongoapp para reemplazar -> {err}"
+            upload_logger.error(msg) 
+            return
     # Metemos la info de mongo en la nueva carpeta (la estamos reemplazando)
     process.run(f'cd database & mkdir "{DDBB_CLOUD_NAME}"', shell=True)
     dbs = dbc.list_dbs(only_app_dbs=True)
@@ -45,8 +48,15 @@ def upload(args:list=[]) -> None:
     order += ' & git add .'
     order += f' & git commit -m "Actualizando {DDBB_CLOUD_NAME}"'
     order += ' & git push origin main'
-    process.run(order, shell=True)
+    try:
+        process.run(order, shell=True)
+    except process.ProcessErr as err:
+        msg = f" No se ha podido actualizar la informacion en github -> {err}"
+        upload_logger.error(msg)
+    
     # Eliminamos la base de datos anterior descargada (carpeta 'database')
-    outcome = process.run(f'del /f/q/s database & rmdir /q/s database', shell=True)
-    if outcome == 1:
-        upload_logger.info(" Fallo al eliminar carpeta 'database' descargada de github")
+    try:
+        process.run('del /f/q/s database & rmdir /q/s database', shell=True)
+    except process.ProcessErr as err:
+        msg = f" Fallo al eliminar carpeta 'database' descargada de github -> {err}"
+        upload_logger.error(msg)

@@ -38,12 +38,15 @@ def run(cmd, stdout=True, stderr=True, shell=False) -> str:
         err_msg = f" Fallo al ejecutar el comando {cmd}"
         if stderr:
             err = process.stderr.decode()[:-1]
-            err_msg += f"\nMensaje de error de lxc: -> {err}"
+            err_msg += f"\nMensaje de error: -> {err}"
         elif stdout:
             err_msg = process.stdout.decode()
         raise ProcessErr(err_msg)
     if stdout:
-        return process.stdout.decode()
+        try:
+            return process.stdout.decode()
+        except:
+            return "No se ha podido decodificar la salida estandar con utf-8"
 
 def Popen(order:str, shell=False) -> None:
     if not shell: 
