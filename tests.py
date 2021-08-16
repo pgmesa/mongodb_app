@@ -65,3 +65,9 @@ from commands.restore_cmd.restore import restore
 # dbc.drop_db("Grades")
 # dbc.drop_db("ToDo")
 # restore()
+
+from mypy_modules.register import register
+
+reg = register.load()
+
+print(reg)

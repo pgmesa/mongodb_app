@@ -21,7 +21,7 @@ def main():
     execute_from_command_line(sys.argv)
     # My final tasks (Solo cuando se pare de ejecutar, ctrl-c se ejecuta esto)
     # (una sola vez)
-    register.remove()
+    ...
 
 if __name__ == '__main__':
     main()

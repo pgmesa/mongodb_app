@@ -442,6 +442,13 @@ def delete_collection(request:HttpRequest, db:str, collection:str) -> HttpRespon
     context_dict["delete_collection"] = True
     return render(request, 'ask_confirmation.html', context_dict)
 
+@_view_inspector
+def collection_stats(request:HttpRequest, db:str, collection:str) -> HttpResponse:
+    context_dict = _get_extra_vars('collection_stats')
+    context_dict.update({"db": db, "collection": collection})
+    
+    return render(request, 'stats.html', context_dict)
+
 # --------------------------------------------------------------------
 # -------------------------- DOCUMENT VIEWS --------------------------
 @_view_inspector
@@ -639,11 +646,22 @@ def _form_to_mongo_queries(form_dict:dict, model:dict) -> dict:
     queries = {}
     for attr_dict in model.values():
         name = attr_dict["name"]; tp = attr_dict["type"]
-        operator = form_dict[f"{name}_select"]; value = form_dict[name]
+        operator = form_dict[f"{name}_select"]; value:str = form_dict[name]
         if value == "": continue
         if tp == 'str':
-            if operator == 'equals': query = {name: value}
-            elif operator == 'contains': query = {name: {"$regex": value}}
+            case = form_dict[f"{name}_case"]
+            if operator == 'equals': 
+                query = {name: value}
+                if case == 'ignore_case': 
+                    query = {"$or":[
+                        {name: value}, 
+                        {name: value.lower()}, 
+                        {name: value.upper()}
+                    ]}      
+            elif operator == 'contains': 
+                query = {name: {"$regex": value}}
+                if case == 'ignore_case': 
+                    query[name].update({"$options": 'i'})
         elif tp == 'int' or tp == 'float':
             if operator == 'eq': query = {name: value}
             elif operator == 'gt': query = {name: {"$gt": value}}
@@ -740,5 +758,3 @@ def sort_documents(request:HttpRequest, db:str, collection:str) -> HttpResponse:
     context_dict["model"] = model
     _set_extra_vars({"sort_attrs": context_dict["sort_attrs"]}, 'sort_documents')
     return render(request, 'sort.html', context_dict)
-    
-    

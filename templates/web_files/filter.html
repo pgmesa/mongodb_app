@@ -67,6 +67,16 @@
                     alt="description" width="35px" height="35px">
               </button>
             </td>
+            <td style="padding: 0px 8px;">
+              <select name="{{attr_dict.name}}_case" style="font-size: 23px;">
+                <option value="ignore_case"{% if attr_dict.name|addstr:"_case"|lookup2:values == 'ignore_case' %}selected{% endif %}>
+                  Ignore case
+                </option>
+                <option value="keep_case" {% if attr_dict.name|addstr:"_case"|lookup2:values == 'keep_case' %}selected{% endif %}>
+                  Keep case
+                </option>
+              </select>
+            </td>
           {% else %}
             <td><div style="height: 40px; width: 40px;"></div></td>
           {% endif %}
