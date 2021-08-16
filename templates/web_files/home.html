@@ -20,6 +20,18 @@
     {% if dbs %}
       {% for db in dbs %}
         <tr>
+          <form action="/" method="POST">
+            {% csrf_token %}
+            <td>
+              <button type="submit" class="button" style="padding: 1px 3px; margin: 0;" name="down" value="{{db}}">
+                <img src="{% static 'icons/down_arrow.ico' %}" alt="Down" width="25px" height="25px">
+              </button>
+            </td>
+            <td>
+              <button type="submit" class="button" style="padding: 1px 3px; margin: 0;" name="up" value="{{db}}">
+                <img src="{% static 'icons/up_arrow.ico' %}" alt="Up" width="25px" height="25px">
+              </button>
+            </td>
           {% if db in app_dbs %}
             <td style="text-align: left; padding: 0px 15px;">
               <ul style="list-style-position: inside;">

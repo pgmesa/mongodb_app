@@ -104,11 +104,31 @@ def _view_inspector(func):
             f"--> MENSAJE DE ERROR:\n\n({str(err)})")
             _set_extra_vars({"err_msg": err_msg, "conserv_format": True}, 'error')
             return HttpResponseRedirect('/error/')
-        except Exception as err:
-            err_msg = f"ERROR: {err}"
-            _set_extra_vars({"err_msg": err_msg, "failed_path": args[0].path_info}, 'error')
-            return HttpResponseRedirect('/error/')
+        # except Exception as err:
+        #     err_msg = f"ERROR: {err}"
+        #     _set_extra_vars({"err_msg": err_msg, "failed_path": args[0].path_info}, 'error')
+        #     return HttpResponseRedirect('/error/')
     return view_inspector
+
+def _order_lists(list_to_order:list, order_list:list) -> list:
+    ordered_list = ["_._"]*len(order_list)
+    new_elements = []
+    for elem in list_to_order:
+        if elem in order_list:
+            index = order_list.index(elem)
+            ordered_list[index] = elem
+        else:
+            new_elements.append(elem)
+    # Added databases
+    for elem in new_elements:
+        ordered_list.insert(0, elem)
+    # Deleted databases
+    cp_ordered_list = copy.deepcopy(ordered_list)
+    for elem in cp_ordered_list:
+        if elem == "_._":
+            ordered_list.remove(elem)
+        
+    return ordered_list
 
 # --------------------------------------------------------------------
 # --------------------------- ERROR VIEW -----------------------------
@@ -127,17 +147,46 @@ def home(request:HttpRequest) -> HttpResponse:
     client_ip = request.META['REMOTE_ADDR']; print(client_ip)
     context_dict = _get_extra_vars("home")
     dbs = dbc.list_dbs()
+    app_dbs = dbc.list_dbs(only_app_dbs=True)
     context_dict["dbs"] = dbs
-    
+
     if not bool(dbs):
         err_msg = "No hay bases de datos creadas, MongoDB esta vacío"
         context_dict["err_msg"] = err_msg
     else:
-        app_dbs = dbc.list_dbs(only_app_dbs=True)
-        for app in app_dbs:
-            dbs.remove(app)
-        dbs = app_dbs + dbs
-        context_dict["dbs"] = dbs
+        reg = register.load()
+        # See if there is an existing predefined order
+        if reg is None or "predef_orders" not in reg or 'dbs' not in reg['predef_orders']:
+            for app in app_dbs:
+                dbs.remove(app)
+            dbs = app_dbs + dbs
+            register.add('predef_orders', {'dbs': dbs})
+        else:
+            predef_orders = reg['predef_orders']
+            order_list = predef_orders['dbs']
+            dbs = _order_lists(dbs, order_list)
+            predef_orders['dbs'] = dbs
+            register.update('predef_orders', predef_orders)
+        # See if up or down button are pressed
+        post_dict = _clean_form(request.POST)
+        if bool(post_dict):
+            if "up" in post_dict:
+                db = post_dict.pop("up")
+                index = dbs.index(db) 
+                new_index = index-1
+                if new_index >= 0:
+                    dbs.pop(index)
+                    dbs.insert(index-1, db)
+            elif "down" in post_dict:
+                db = post_dict.pop("down")
+                index = dbs.index(db)
+                new_index = index+1
+                if new_index < len(dbs):
+                    dbs.pop(index)
+                    dbs.insert(index+1, db)
+            register.update('predef_orders', dbs, override=False, dict_id='dbs')  
+            
+        context_dict["dbs"] = dbs 
         context_dict["app_dbs"] = app_dbs
         
     response:HttpResponse = render(request, 'home.html', context_dict)
