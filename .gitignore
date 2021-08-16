@@ -1,4 +1,7 @@
+# git rm -rf --cached . y despues git add . por si quiero que archivos que ya se hayan subido, sean ignorados 
+# y eliminados por .gitignore
 
 __pycache__
 tests.py
 .register
+db.sqlite3
