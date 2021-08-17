@@ -29,7 +29,7 @@
     {% if num %}
       {{num}}/{{docs_len}}
     {% else %}
-      <form action="" method="POST" name="clear_form">
+      <form action="/display/{{db}}/{{collection}}" method="POST" name="clear_form">
         {% csrf_token %}
         <input type="submit" class="button" value="Clear all" name="clear">
       </form>
@@ -59,14 +59,16 @@
             <table style="margin: auto;">
               <tr>
                 <td style="padding: 0 5px;">
-                  <form action="" method="GET">
+                  <form action="/display/{{db}}/{{collection}}" method="POST">
+                    {% csrf_token %}
                     <button type="submit" class="img_button" name="update_filter">
                       <img src="{% static 'icons/edit.ico' %}" alt="Update Filter" width="35px" height="35px">
                     </button>
                   </form>
                 </td>
                 <td style="padding: 0 5px;">
-                  <form action="" method="GET">
+                  <form action="/display/{{db}}/{{collection}}" method="POST">
+                    {% csrf_token %}
                     <button type="submit" class="img_button" name="delete_filter">
                       <img src="{% static 'icons/delete.ico' %}" alt="delete_filter" width="35px" height="35px">
                     </button>
@@ -81,14 +83,16 @@
             <table style="margin: auto;">
               <tr>
                 <td style="padding: 0 5px;">
-                  <form action="" method="GET">
+                  <form action="/display/{{db}}/{{collection}}" method="POST">
+                    {% csrf_token %}
                     <button type="submit" class="img_button" name="update_sorter">
                       <img src="{% static 'icons/edit.ico' %}" alt="Update Sort" width="35px" height="35px">
                     </button>
                   </form>
                 </td>
                 <td style="padding: 0 5px;">
-                  <form action="" method="GET">
+                  <form action="/display/{{db}}/{{collection}}" method="POST">
+                    {% csrf_token %}
                     <button type="submit" class="img_button" name="delete_sorter">
                       <img src="{% static 'icons/delete.ico' %}" alt="Delete Sort" width="35px" height="35px">
                     </button>
@@ -113,6 +117,49 @@
             <h3 style="color: blue;">{{attr_dict.name}}</h3>
           </td>
         {% endfor %}
+      </tr>
+      {% if numbers %}
+        <tr>
+          <td></td>
+          <form action="/display/{{db}}/{{collection}}" method="POST">
+            {% csrf_token %}
+            {% for attr_dict in model.values %}
+              <td>
+                {% if attr_dict.type != 'str' %} 
+                  <select class="select" name="{{attr_dict.name}}_stat">
+                    <option value="-" {% if stats and attr_dict.name|addstr:"_stat"|lookup2:stats == '-' %}selected{% endif %}> - </option>
+                    <option value="avg" {% if stats and attr_dict.name|addstr:"_stat"|lookup2:stats == 'avg' %}selected{% endif %}>avg</option>
+                    <option value="sum" {% if stats and attr_dict.name|addstr:"_stat"|lookup2:stats == 'sum' %}selected{% endif %}>sum</option>
+                  </select> 
+                {% endif %}
+              </td>
+            {% endfor %}
+            <td>
+              <button type="submit" class="button" style="padding: 1px 3px; margin: 0;" name="tick">
+                <img src="{% static 'icons/tick.ico' %}" alt="Tick" width="35px" height="35px">
+              </button>
+            </td>
+            <td>
+              <button type="submit" class="button" style="padding: 1px 3px; margin: 0;" name="bin">
+                <img src="{% static 'icons/delete2.ico' %}" alt="Tick" width="35px" height="35px">
+              </button>
+            </td>
+          </form>
+        </tr>
+      {% endif %}
+      <tr>
+        {% if calculated_stats %}
+          <td></td>
+          {% for attr_dict in model.values %}
+            <td>
+              {% if attr_dict.name in calculated_stats %} 
+                <div style="color: green;">
+                  {{calculated_stats|lookup:attr_dict.name}}
+                </div>
+              {% endif %}
+            </td>
+          {% endfor %}
+        {% endif %}
       </tr>
       <tr>
         <td></td>

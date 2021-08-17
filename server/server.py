@@ -2,6 +2,7 @@
 import json
 import copy
 from contextlib import suppress
+from os import stat
 from pymongo.errors import ServerSelectionTimeoutError
 # django imports
 from django.http import HttpResponse, HttpRequest, HttpResponseRedirect
@@ -504,12 +505,30 @@ def collection_stats(request:HttpRequest, db:str, collection:str) -> HttpRespons
 def display_documents(request:HttpRequest, db:str, collection:str , extra_vars:dict={}) -> HttpResponse:
     context_dict = {"db": db, "collection": collection}
     extra_vars = _get_extra_vars("display_documents")
+    
     for var, val in extra_vars.items():
         context_dict[var] = val
+    # Miramos si hay que eliminar todos los docs
+    clear_form = _clean_form(request.POST)
+    if "yes" in clear_form:
+        docs = dbc.get_documents(db, collection)
+        for doc in docs:
+            dbc.delete_document(db, collection, doc["id"])
+        docs = dbc.get_documents(db, collection)
+        if not bool(docs):
+            msg = "Coleccion vaciada con exito"
+            context_dict["msg"] = msg
+            context_dict["docs"] = docs
+    elif "no" in clear_form:
+        err_msg = "Operacion cancelada"
+        context_dict["err_msg"] = err_msg
+    elif bool(clear_form) and "clear" in clear_form:
+        context_dict["delete_docs"] = True
+        return render(request, 'ask_confirmation.html', context_dict)
     # Miramos si hay algun filtro que aplicar 
     filters = register.load('filters'); queries = {}  
-    filter_form = _clean_form(request.GET)
-    if "delete_filter" in filter_form:
+    filter_form = _clean_form(request.POST)
+    if "delete_filter" in filter_form and f"{db}.{collection}" in filters:
         filters.pop(f"{db}.{collection}")
         register.update('filters', filters)
     elif "update_filter" in filter_form:
@@ -521,8 +540,8 @@ def display_documents(request:HttpRequest, db:str, collection:str , extra_vars:d
         if bool(queries): context_dict["filtered"] = True
     # Miramos si hay algun clasificador que aplicar     
     sorters = register.load('sorters'); sort_dict = {}  
-    sorter_form = _clean_form(request.GET)
-    if "delete_sorter" in sorter_form:
+    sorter_form = _clean_form(request.POST)
+    if "delete_sorter" in sorter_form and f"{db}.{collection}" in sorters:
         sorters.pop(f"{db}.{collection}")
         register.update('sorters', sorters)
     elif "update_sorter" in sorter_form:
@@ -532,26 +551,59 @@ def display_documents(request:HttpRequest, db:str, collection:str , extra_vars:d
         if sorters is not None:
             sort_dict = sorters.get(f"{db}.{collection}", {})
         if bool(sort_dict): context_dict["sorted"] = True
-        
+    # Buscamos los documentos con el filtro y clasificador que haya aplicados
     docs = dbc.get_documents(db, collection, queries=queries, sort_dict=sort_dict, invert_sort=True)
-    context_dict["docs"] = docs
-    # Miramos si hay que eliminar todos los docs
-    clear_form = _clean_form(request.POST)
-    if "yes" in clear_form:
-        for doc in docs:
-            dbc.delete_document(db, collection, doc["id"])
-        docs = dbc.get_documents(db, collection)
-        if not bool(docs):
-            msg = "Coleccion vaciada con exito"
-            context_dict["msg"] = msg
-    elif "no" in clear_form:
-        err_msg = "Operacion cancelada"
-        context_dict["err_msg"] = err_msg
-    elif bool(clear_form) and "clear" in clear_form:
-        context_dict["delete_docs"] = True
-        return render(request, 'ask_confirmation.html', context_dict)
+    # Miramos si hay alguna estadistica que aplicar sobre algun campo
+    stats_form = _clean_form(request.POST)
+    if "tick" in stats_form:
+        stats_form.pop("tick")
+        register.update('stats', stats_form, override=False, dict_id=f"{db}.{collection}")
+    elif "bin" in stats_form:
+        stats_form = {}
+        register.update('stats', stats_form, override=False, dict_id=f"{db}.{collection}")
+    else:
+        stats = register.load('stats')
+        if stats is not None:
+            stats_form = stats.get(f"{db}.{collection}", None)
+            if stats_form is None:
+                stats_form = {}
+                stats[f"{db}.{collection}"] = stats_form
+                register.update('stats', stats)
+        else:
+            stats_form = {}
+            register.add('stats', {f"{db}.{collection}": stats_form})
+    context_dict["stats"] = stats_form
+    # Calculamos las estadisticas
+    if bool(stats_form):
+        calculated_stats = {}
+        for field, operator in stats_form.items():
+            if operator == '-': continue
+            field = field.removesuffix("_stat")
+            if operator == 'avg' or operator == 'sum':
+                lenght = len(docs)
+                sum_ = 0
+                for doc in docs:
+                    if doc[field] == '': lenght -= 1
+                    else: sum_ += doc[field]
+                if operator == 'avg': 
+                    if lenght > 0:
+                        result = round(sum_/lenght, 2)
+                    else:
+                        result = 0
+                elif operator == 'sum': result = sum_
+            calculated_stats[field] = result
+        context_dict["calculated_stats"] = calculated_stats          
     # Mostramos los documentos segun si hay o no hay modelo establecido
     model_doc = dbc.get_model(db, collection)
+    
+        # Miramos si hay algun atributo que sea un numero 
+    for attr_dict in model_doc.values():
+        if attr_dict["type"] != 'str':
+            context_dict["numbers"] = True
+            break
+    else:
+        context_dict["numbers"] = False
+            
     if bool(model_doc):
         context_dict["model"] = model_doc
         if not bool(docs):
@@ -581,7 +633,7 @@ def display_documents(request:HttpRequest, db:str, collection:str , extra_vars:d
             str_doc = json.dumps(doc, indent=4, sort_keys=True)
             str_docs.append(str_doc)
         context_dict["docs"] = str_docs
-    
+
     return render(request, 'documents.html', context_dict)
 
 @_view_inspector
