@@ -621,17 +621,15 @@ def display_documents(request:HttpRequest, db:str, collection:str , extra_vars:d
         context_dict["calculated_stats"] = calculated_stats          
     # Mostramos los documentos segun si hay o no hay modelo establecido
     model_doc = dbc.get_model(db, collection)
-    
-        # Miramos si hay algun atributo que sea un numero 
-    for attr_dict in model_doc.values():
-        if attr_dict["type"] != 'str':
-            context_dict["numbers"] = True
-            break
-    else:
-        context_dict["numbers"] = False
-            
     if bool(model_doc):
-        context_dict["model"] = model_doc
+        # Miramos si hay algun atributo que sea un numero 
+        for attr_dict in model_doc.values():
+            if attr_dict["type"] != 'str':
+                context_dict["numbers"] = True
+                break
+        else:
+            context_dict["numbers"] = False
+            context_dict["model"] = model_doc
         if not bool(docs):
             err_msg = "No existen documentos en esta coleccion"
             if "filtered" in context_dict:
