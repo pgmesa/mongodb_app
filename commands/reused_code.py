@@ -3,7 +3,8 @@ import os
 
 from mypy_modules.process import process
 
-REPO_PATH = "https://github.com/pgmesa"
+REPO_USER = "pgmesa"
+REPO_PATH = f"https://github.com/{REPO_USER}"
 REPO_NAME = "databases"
 DDBB_CLOUD_NAME = "mongoapp"
 
