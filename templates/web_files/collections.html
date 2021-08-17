@@ -18,16 +18,19 @@
     {% if db_collections %}
       {% for collection in db_collections %}
         <tr>
-          <td>
-            <button type="submit" class="button" style="padding: 1px 3px; margin: 0;" name="down" value="{{attr}}">
-              <img src="{% static 'icons/down_arrow.ico' %}" alt="Down" width="25px" height="25px">
-            </button>
-          </td>
-          <td>
-            <button type="submit" class="button" style="padding: 1px 3px; margin: 0;" name="up" value="{{attr}}">
-              <img src="{% static 'icons/up_arrow.ico' %}" alt="Up" width="25px" height="25px">
-            </button>
-          </td>
+          <form action="/display/{{db}}" method="POST">
+            {% csrf_token %}
+            <td>
+              <button type="submit" class="button" style="padding: 1px 3px; margin: 0;" name="down" value="{{collection}}">
+                <img src="{% static 'icons/down_arrow.ico' %}" alt="Down" width="25px" height="25px">
+              </button>
+            </td>
+            <td>
+              <button type="submit" class="button" style="padding: 1px 3px; margin: 0;" name="up" value="{{collection}}">
+                <img src="{% static 'icons/up_arrow.ico' %}" alt="Up" width="25px" height="25px">
+              </button>
+            </td>
+          </form>
           {% if collection in app_db_collections %}
             <td style="text-align: left; padding: 0px 15px;">
               <ul style="list-style-position: inside;">

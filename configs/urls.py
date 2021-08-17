@@ -33,7 +33,6 @@ urlpatterns = [
     path('doc_model/<db>/<collection>', create_doc_model),
     path('update/<db>/<collection>', update_collection),
     path('delete/<db>/<collection>', delete_collection),
-    path('stats/<db>/<collection>', collection_stats),
     # documents
     path('display/<db>/<collection>', display_documents),
     path('add/<db>/<collection>', add_document),

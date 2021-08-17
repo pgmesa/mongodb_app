@@ -155,19 +155,16 @@ def home(request:HttpRequest) -> HttpResponse:
         err_msg = "No hay bases de datos creadas, MongoDB esta vacío"
         context_dict["err_msg"] = err_msg
     else:
-        reg = register.load()
+        order_list = register.load('dbs_order')
         # See if there is an existing predefined order
-        if reg is None or "predef_orders" not in reg or 'dbs' not in reg['predef_orders']:
-            for app in app_dbs:
-                dbs.remove(app)
+        if order_list is None:
+            for db_app in app_dbs:
+                dbs.remove(db_app)
             dbs = app_dbs + dbs
-            register.add('predef_orders', {'dbs': dbs})
+            register.add('dbs_order', dbs)
         else:
-            predef_orders = reg['predef_orders']
-            order_list = predef_orders['dbs']
             dbs = _order_lists(dbs, order_list)
-            predef_orders['dbs'] = dbs
-            register.update('predef_orders', predef_orders)
+            register.update('dbs_order', dbs)
         # See if up or down button are pressed
         post_dict = _clean_form(request.POST)
         if bool(post_dict):
@@ -185,7 +182,7 @@ def home(request:HttpRequest) -> HttpResponse:
                 if new_index < len(dbs):
                     dbs.pop(index)
                     dbs.insert(index+1, db)
-            register.update('predef_orders', dbs, override=False, dict_id='dbs')  
+            register.update('dbs_order', dbs)  
             
         context_dict["dbs"] = dbs 
         context_dict["app_dbs"] = app_dbs
@@ -270,16 +267,51 @@ def display_collections(request:HttpRequest, db:str) -> HttpResponse:
     context_dict = _get_extra_vars("display_collections")
     context_dict["db"] = db
     collections = dbc.list_collections(db)
+    app_collections = dbc.list_collections(db, only_app_coll=True)
+    context_dict["db_collections"] = collections
+    
     if not bool(collections):
         err_msg = "No existen colecciones en esta base de datos"
         context_dict["err_msg"] = err_msg
     else:
-        app_collections = dbc.list_collections(db, only_app_coll=True)
-        for app in app_collections:
-            collections.remove(app)
-        collections = app_collections + collections
-        context_dict["app_db_collections"] = app_collections
+        collec_orders = register.load('db_collec_orders')
+        order_list = collec_orders.get(db, None)
+        # See if there is an existing predefined order
+        if collec_orders is None or order_list is None:
+            for collec in app_collections:
+                collections.remove(collec)
+            collections = app_collections + collections
+            if collec_orders is None:
+                register.add('db_collec_orders', {db: collections})
+            else:
+                collec_orders[db] = collections
+                register.update('db_collec_orders', collec_orders)
+        else:
+            collections = _order_lists(collections, order_list)
+            collec_orders[db] = collections
+            register.update('db_collec_orders', collec_orders)
+        # See if up or down button are pressed
+        post_dict = _clean_form(request.POST)
+        print(post_dict)
+        if bool(post_dict):
+            if "up" in post_dict:
+                collection = post_dict.pop("up")
+                index = collections.index(collection) 
+                new_index = index-1
+                if new_index >= 0:
+                    collections.pop(index)
+                    collections.insert(index-1, collection)
+            elif "down" in post_dict:
+                collection = post_dict.pop("down")
+                index = collections.index(collection)
+                new_index = index+1
+                if new_index < len(collections):
+                    collections.pop(index)
+                    collections.insert(index+1, collection)
+            register.update('db_collec_orders', collections, override=False, dict_id=db)
+        
         context_dict["db_collections"] = collections
+        context_dict["app_db_collections"] = app_collections
         
     return render(request, 'collections.html', context_dict)
 
@@ -491,13 +523,6 @@ def delete_collection(request:HttpRequest, db:str, collection:str) -> HttpRespon
     
     context_dict["delete_collection"] = True
     return render(request, 'ask_confirmation.html', context_dict)
-
-@_view_inspector
-def collection_stats(request:HttpRequest, db:str, collection:str) -> HttpResponse:
-    context_dict = _get_extra_vars('collection_stats')
-    context_dict.update({"db": db, "collection": collection})
-    
-    return render(request, 'stats.html', context_dict)
 
 # --------------------------------------------------------------------
 # -------------------------- DOCUMENT VIEWS --------------------------
