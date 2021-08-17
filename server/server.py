@@ -275,7 +275,8 @@ def display_collections(request:HttpRequest, db:str) -> HttpResponse:
         context_dict["err_msg"] = err_msg
     else:
         collec_orders = register.load('db_collec_orders')
-        order_list = collec_orders.get(db, None)
+        if collec_orders is not None:
+            order_list = collec_orders.get(db, None)
         # See if there is an existing predefined order
         if collec_orders is None or order_list is None:
             for collec in app_collections:
