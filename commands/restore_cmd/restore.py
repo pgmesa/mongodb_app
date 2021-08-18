@@ -32,23 +32,22 @@ def restore(args:list=[], options:dict={}, flags:list=[], nested_cmds:dict={}):
         download_repo()
     except process.ProcessErr as err:
         restore_logger.error(err); return
-    github_user, repo_name, folder_name = get_github_info()    
+    github_user, repo_name, dir_name = get_github_info()    
     files = os.listdir(BASE_DIR/f'{SECURE_DIR}')
-    if folder_name in files:
+    if dir_name in files:
         # Almacenamos y comprobamos que el formato de la carpeta del repositorio y
         # sus archivos tienen el formato correcto
         msg = (" Migrando ultimo estado guardado en " + 
-                    f"({GITHUB_URL}/{github_user}/{repo_name}/{folder_name})")
+                    f"({GITHUB_URL}/{github_user}/{repo_name}/{dir_name})")
         restore_logger.info(msg)
-        dbs = os.listdir(BASE_DIR/f'{SECURE_DIR}/{folder_name}')
+        dbs = os.listdir(BASE_DIR/f'{SECURE_DIR}/{dir_name}')
         restored_dbs = {}
         try:
             for db in dbs:
-                db_path = BASE_DIR/f'{SECURE_DIR}/{folder_name}/{db}'
+                db_path = BASE_DIR/f'{SECURE_DIR}/{dir_name}/{db}'
                 if not os.path.isdir(db_path): continue
                 restored_dbs[db] = {}
                 collections = os.listdir(db_path)
-                existing_collec = dbc.list_collections(db)
                 for collection in collections:
                     path = db_path/f'{collection}'
                     if not os.path.isfile(path):
@@ -65,7 +64,6 @@ def restore(args:list=[], options:dict={}, flags:list=[], nested_cmds:dict={}):
                     else:
                         collection = collection.removesuffix(".json")
                         restored_dbs[db][collection] = {}
-                        if collection in existing_collec: continue
                         if type(docs) is dict:
                             doc = docs
                             restored_dbs[db][collection] = [doc]
@@ -85,9 +83,11 @@ def restore(args:list=[], options:dict={}, flags:list=[], nested_cmds:dict={}):
                 for collection in collections:
                     dbc.remove_collecttion(db, collection)
             # Guardamos en mongo el estado anterior guardado en e repositorio
+            existing_collec = dbc.list_collections(db)
             for db in restored_dbs:
                 collections = restored_dbs[db]
                 for collection in collections:
+                    if collection in existing_collec: continue
                     docs = restored_dbs[db][collection]
                     for doc in docs:
                         dbc.add_document(db, collection, doc)

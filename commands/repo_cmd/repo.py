@@ -8,15 +8,14 @@ from .add_cmd.add import get_add_cmd, add
 from .rm_cmd.rm import get_rm_cmd, rm
 from .show_cmd.show import get_show_cmd, show
 # Imports para la funcion del comando
-from controllers import db_controller as dbc
+from mypy_modules.register import register
 
 
 def get_repo_cmd() -> Command:
     msg = f"""git repository to store the documents of the 
     Mongo databases managed by the app"""
     repo = Command(
-        'repo', description=msg, 
-        mandatory_nested_cmd=True
+        'repo', description=msg
     )
     # ++++++++++++++++++++++++++++++++
     add_cmd = get_add_cmd()
@@ -28,8 +27,8 @@ def get_repo_cmd() -> Command:
     show_cmd = get_show_cmd()
     repo.nest_cmd(show_cmd)
     # --------------------------------
-    usr_opt = def_usr_opt()
-    repo.add_option(usr_opt)
+    user_opt = def_user_opt()
+    repo.add_option(user_opt)
     # --------------------------------
     name_opt = def_name_opt()
     repo.add_option(name_opt)
@@ -40,14 +39,14 @@ def get_repo_cmd() -> Command:
     return repo
 
 # --------------------------------------------------------------------
-def def_usr_opt() -> Option:
+def def_user_opt() -> Option:
     msg = """<github_user_name> allows to change the github user"""
-    usr = Option(
-        '--usr', description=msg,
+    user = Option(
+        '--user', description=msg,
         extra_arg=True, mandatory=True
     )
     
-    return usr
+    return user
 
 def def_name_opt() -> Option:
     msg = """<github_repo_name> allows to change the github repository name"""
@@ -72,13 +71,49 @@ def def_dir_opt() -> Option:
 # --------------------------------------------------------------------
 repo_logger = logging.getLogger(__name__)
 def repo(args:list=[], options:dict={}, flags:list=[], nested_cmds:dict={}):
+    # Miramos las opciones
+    github_info = register.load('github')
+    if "--user" in options:
+        if github_info is not None:
+            new_user = options['--user'][0]
+            github_info['user'] = new_user
+            register.update('github', github_info)
+            msg = f" Usuario de github actualizado con exito a '{new_user}'"
+            repo_logger.info(msg)
+        else:
+            msg = f" No se ha añadido ningun repositorio todavia"
+            repo_logger.info(msg)
+    elif "--name" in options:
+        if github_info is not None:
+            new_name = options['--name'][0]
+            github_info['repo_name'] = new_name
+            register.update('github', github_info)
+            msg = (f" Nombre del repositorio de github actualizado " + 
+                    f"con exito a '{new_name}'")
+            repo_logger.info(msg)
+        else:
+            msg = f" No se ha añadido ningun repositorio todavia"
+            repo_logger.info(msg)
+    elif "--dir" in options:
+        if github_info is not None:
+            new_dir = options['--dir'][0]
+            github_info['dir_name'] = new_dir
+            register.update('github', github_info)
+            msg = (" Directorio del repositorio actualizado " + 
+                    f"con exito a '{new_dir}'")
+            repo_logger.info(msg)
+        else:
+            msg = f" No se ha añadido ningun repositorio todavia"
+            repo_logger.info(msg)
+            
+    # Miramos los comandos anidados
     if "add" in nested_cmds:
         cmd_info = nested_cmds.pop("add")
         add(**cmd_info)
-    if "rm" in nested_cmds:
+    elif "rm" in nested_cmds:
         cmd_info = nested_cmds.pop("rm")
         rm(**cmd_info)
-    if "show" in nested_cmds:
+    elif "show" in nested_cmds:
         cmd_info = nested_cmds.pop("show")
         show(**cmd_info)
     

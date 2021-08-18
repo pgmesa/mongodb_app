@@ -10,12 +10,15 @@ SECURE_DIR = "__secure-dir__"
 def save_github_info(change=False):
     github_info = register.load('github')
     if github_info is None or change:
+        print()
+        print(" -> AÑADIR REPOSITORIO")
         user = str(input("    + Introduce el usuario de github: "))
         repo_name = str(input("    + Introduce el nombre del repositorio: "))
-        msg = ("    + Introduce el nombre de la carpeta donde se guardara/descargara " + 
+        msg = ("    + Introduce el nombre del directorio donde se guardara/descargara " + 
                "la informacion: ")
-        folder_name = str(input(msg))
-        new_github_info = {'user': user, 'repo_name': repo_name, 'folder_name': folder_name}
+        dir_name = str(input(msg))
+        print()
+        new_github_info = {'user': user, 'repo_name': repo_name, 'dir_name': dir_name}
         if github_info is None:
             register.add('github', new_github_info)
         else:
@@ -27,7 +30,7 @@ def get_github_info() -> list:
 
 def download_repo():
     # Vemos si tenemos los datos del repositorio guardados y si no los pedimos
-    github_user, repo_name, folder_name = get_github_info()
+    github_user, repo_name, dir_name = get_github_info()
     # Descargamos el repositorio de bases de datos almacenado en github
     if os.path.exists(SECURE_DIR):
         remove_repo()
