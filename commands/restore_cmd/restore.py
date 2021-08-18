@@ -11,12 +11,13 @@ from mypy_modules.cli import Command, Flag, Option
 from controllers import db_controller as dbc
 from configs.settings import BASE_DIR
 from ..reused_code import (
-    download_repo, remove_repo, REPO_PATH,
-    REPO_NAME, DDBB_CLOUD_NAME
+    download_repo, remove_repo, GITHUB_URL, get_github_info, 
+    save_github_info, SECURE_DIR
 )
+
 def get_restore_cmd() -> Command:
     msg = f"""restores the last saved mongoapp state in 
-    ({REPO_PATH}/{REPO_NAME}/{DDBB_CLOUD_NAME})"""
+    the github repository specified"""
     restore = Command(
         'restore', description=msg
     )
@@ -27,52 +28,74 @@ def get_restore_cmd() -> Command:
 # --------------------------------------------------------------------
 restore_logger = logging.getLogger(__name__)
 def restore(args:list=[], options:dict={}, flags:list=[], nested_cmds:dict={}):
+    save_github_info()
     try:
         download_repo()
     except process.ProcessErr as err:
         restore_logger.error(err); return
-    # Eliminamos el estado actual de la app en mongo
-    msg = " Eliminando estado actual de las bases de datos de la aplicacion"
-    restore_logger.info(msg)
-    app_mongo_dbs = dbc.list_dbs(only_app_dbs=True)
-    for db in app_mongo_dbs:
-        collections = dbc.list_collections(db, only_app_coll=True)
-        for collection in collections:
-            dbc.remove_collecttion(db, collection)
-    # Guardamos en mongo el estado anterior de la app
-    msg = (" Migrando ultimo estado guardado en " + 
-                f"({REPO_PATH}/{REPO_NAME}/{DDBB_CLOUD_NAME})")
-    restore_logger.info(msg)
-    files = os.listdir(BASE_DIR/f'{REPO_NAME}')
-    if DDBB_CLOUD_NAME in files:
-        dbs = os.listdir(BASE_DIR/f'{REPO_NAME}/{DDBB_CLOUD_NAME}')
-        for db in dbs:
-            collections = os.listdir(BASE_DIR/f'{REPO_NAME}/{DDBB_CLOUD_NAME}/{db}')
-            existing_collec = dbc.list_collections(db)
-            for collection in collections:
-                path = BASE_DIR/f'{REPO_NAME}/{DDBB_CLOUD_NAME}/{db}/{collection}'
-                try:
-                    with open(path, "r") as file:
-                        docs = json.load(file)
-                except Exception as err:
-                    err_type = type(err)
-                    err_msg = ("Fallo al realizar las migraciones, " + 
-                        f"fichero no valido. TypeError => {err_type}")
-                    restore_logger.error(err_msg)
-                    return
-                else:
-                    collection = collection.removesuffix(".json")
-                    if collection in existing_collec: continue
+    github_user, repo_name, folder_name = get_github_info()    
+    files = os.listdir(BASE_DIR/f'{SECURE_DIR}')
+    if folder_name in files:
+        # Almacenamos y comprobamos que el formato de la carpeta del repositorio y
+        # sus archivos tienen el formato correcto
+        msg = (" Migrando ultimo estado guardado en " + 
+                    f"({GITHUB_URL}/{github_user}/{repo_name}/{folder_name})")
+        restore_logger.info(msg)
+        dbs = os.listdir(BASE_DIR/f'{SECURE_DIR}/{folder_name}')
+        restored_dbs = {}
+        try:
+            for db in dbs:
+                db_path = BASE_DIR/f'{SECURE_DIR}/{folder_name}/{db}'
+                if not os.path.isdir(db_path): continue
+                restored_dbs[db] = {}
+                collections = os.listdir(db_path)
+                existing_collec = dbc.list_collections(db)
+                for collection in collections:
+                    path = db_path/f'{collection}'
+                    if not os.path.isfile(path):
+                        msg = f"'{collection}' no es un fichero .json"
+                        raise Exception(msg)
                     try:
+                        with open(path, "r") as file:
+                            docs = json.load(file)
+                    except Exception as err:
+                        err_type = type(err)
+                        err_msg = (f"Fichero no valido.\nTypeError => " + 
+                                   f"{err_type}, {err}") 
+                        raise Exception(err_msg)
+                    else:
+                        collection = collection.removesuffix(".json")
+                        restored_dbs[db][collection] = {}
+                        if collection in existing_collec: continue
                         if type(docs) is dict:
                             doc = docs
-                            dbc.add_document(db, collection, doc)
+                            restored_dbs[db][collection] = [doc]
                         elif type(docs) is list:
-                            for doc in docs:
-                                dbc.add_document(db, collection, doc)
-                    except Exception as err:
-                        restore_logger.error(err)
-                        break
+                            restored_dbs[db][collection] = docs
+        except Exception as err:
+            msg = (f" No se pudo realizar la migracion, error en el formato " + 
+                f"\n    ERR MSG -> {err}")
+            restore_logger.error(msg)
+        else:
+            # Eliminamos el estado actual de la app en mongo
+            msg = " Eliminando estado actual de las bases de datos de la aplicacion"
+            restore_logger.info(msg)
+            app_mongo_dbs = dbc.list_dbs(only_app_dbs=True)
+            for db in app_mongo_dbs:
+                collections = dbc.list_collections(db, only_app_coll=True)
+                for collection in collections:
+                    dbc.remove_collecttion(db, collection)
+            # Guardamos en mongo el estado anterior guardado en e repositorio
+            for db in restored_dbs:
+                collections = restored_dbs[db]
+                for collection in collections:
+                    docs = restored_dbs[db][collection]
+                    for doc in docs:
+                        dbc.add_document(db, collection, doc)
+    else:
+        msg = (" No existe ningun estado anterior guardado en el repositorio " +
+                f"{GITHUB_URL}/{github_user}/{repo_name}")
+        restore_logger.error(msg)
     # Eliminamos el repositorio descargado anteriormente
     try:
         remove_repo()

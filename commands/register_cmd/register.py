@@ -9,7 +9,8 @@ from .remove_cmd.remove import remove, get_remove_cmd
 from .clear_cmd.clear import clear, get_clear_cmd
 
 def get_register_cmd() -> Command:
-    msg = """allows to interact with the register of the app"""
+    msg = """allows to interact with the configuration 
+    register of the app"""
     register = Command(
         'register', description=msg,
         mandatory_nested_cmd=True,

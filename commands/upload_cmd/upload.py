@@ -1,5 +1,6 @@
 
 import logging
+from mypy_modules import register
 import os
 import json
 from mypy_modules.process import process
@@ -10,13 +11,12 @@ from mypy_modules.cli import Command, Flag, Option
 from controllers import db_controller as dbc
 from configs.settings import BASE_DIR
 from ..reused_code import (
-    download_repo, remove_repo, REPO_PATH,
-    REPO_NAME, DDBB_CLOUD_NAME
+    download_repo, remove_repo, GITHUB_URL, get_github_info, 
+    save_github_info, SECURE_DIR
 )
 
 def get_upload_cmd() -> Command:
-    msg = f"""uploads the mongoapp to 
-    ({REPO_PATH}/{REPO_NAME}/{DDBB_CLOUD_NAME})"""
+    msg = f"""uploads the mongoapp to the github repository specified"""
     upload = Command(
         'upload', description=msg
     )
@@ -29,17 +29,19 @@ upload_logger = logging.getLogger(__name__)
 def upload(args:list=[], options:dict={}, flags:list=[], nested_cmds:dict={}):
     # Descargamos la base de datos de github y eliminamos el registro 
     # anterior de la mongoapp para reemplazarlo
+    save_github_info()
     try:
         download_repo()
     except process.ProcessErr as err:
         upload_logger.error(err); return
-    ddbb_path = BASE_DIR/f'{REPO_NAME}'
-    rel_db_app_path = f'{REPO_NAME}/{DDBB_CLOUD_NAME}'
+    github_user, repo_name, folder_name = get_github_info()
+    ddbb_path = BASE_DIR/f'{SECURE_DIR}'
+    rel_db_app_path = f'{SECURE_DIR}/{folder_name}'
     files = os.listdir(ddbb_path)
-    if DDBB_CLOUD_NAME in files:
+    if folder_name in files:
         try:
-            process.run(f'cd {REPO_NAME} & del /f/q/s "{DDBB_CLOUD_NAME}" '
-                        + f'& rmdir /q/s "{DDBB_CLOUD_NAME}"', shell=True)
+            process.run(f'cd {SECURE_DIR} & del /f/q/s "{folder_name}" '
+                        + f'& rmdir /q/s "{folder_name}"', shell=True)
         except process.ProcessErr as err:
             msg = f" Fallo al eliminar carpeta mongoapp para reemplazar -> {err}"
             upload_logger.error(msg) 
@@ -47,7 +49,7 @@ def upload(args:list=[], options:dict={}, flags:list=[], nested_cmds:dict={}):
     # Metemos la info de mongo en la nueva carpeta (la estamos reemplazando)
     msg = " Descargando documentos de mongodb pertenecientes a la aplicacion..."
     upload_logger.info(msg)
-    process.run(f'cd {REPO_NAME} & mkdir "{DDBB_CLOUD_NAME}"', shell=True)
+    process.run(f'cd {SECURE_DIR} & mkdir "{folder_name}"', shell=True)
     dbs = dbc.list_dbs(only_app_dbs=True)
     for db in dbs:
         process.run(f'cd "{rel_db_app_path}" & mkdir "{db}"', shell=True)
@@ -58,13 +60,16 @@ def upload(args:list=[], options:dict={}, flags:list=[], nested_cmds:dict={}):
             with open(path, "w") as file:
                 json.dump(docs, file, indent=4, sort_keys=True)
     # Actualizamos la informacion en github
-    msg = f" Actualizando base de datos '{DDBB_CLOUD_NAME}' en github..."
+    msg = f" Actualizando base de datos '{folder_name}' en github..."
     upload_logger.info(msg)
-    order = f'cd {REPO_NAME}'
-    order += ' & git add .'
-    order += f' & git commit -m "Actualizando {DDBB_CLOUD_NAME}"'
-    order += ' & git push origin main'
     try:
+        order = f'cd {SECURE_DIR}'
+        order += ' & git add .'
+        order += f' & git commit -m "Actualizando {folder_name}"'
+        branches = process.run(f"cd {SECURE_DIR} & git branch", shell=True)
+        if branches == "":
+            order += ' & git branch -M main'
+        order += ' & git push origin main'
         process.run(order, shell=True)
     except process.ProcessErr as err:
         msg = f" No se ha podido actualizar la informacion en github -> {err}"
