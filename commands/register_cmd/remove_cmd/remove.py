@@ -6,7 +6,7 @@ from mypy_modules.cli import Command, Flag, Option
 from mypy_modules.register import register
 
 def get_remove_cmd() -> Command:
-    msg = """allows to remove a key of the register"""
+    msg = """<register_key> allows to remove a key of the register"""
     remove = Command(
         'remove', description=msg,
         extra_arg=True, mandatory=True

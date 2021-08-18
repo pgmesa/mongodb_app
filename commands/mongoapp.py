@@ -8,6 +8,7 @@ from .launch_cmd.launch import get_launch_cmd, launch
 from .upload_cmd.upload import get_upload_cmd, upload
 from .restore_cmd.restore import get_restore_cmd, restore
 from .register_cmd.register import get_register_cmd, register
+from .repo_cmd.repo import get_repo_cmd, repo
 
 def get_mongoapp_cmd() -> Command:
     msg = """
@@ -34,8 +35,10 @@ def get_mongoapp_cmd() -> Command:
     # ++++++++++++++++++++++++++++++++
     register_cmd = get_register_cmd()
     mongoapp.nest_cmd(register_cmd)
-    
-    
+    # ++++++++++++++++++++++++++++++++
+    repo_cmd = get_repo_cmd()
+    mongoapp.nest_cmd(repo_cmd)
+
     return mongoapp
     
 def mongoapp(args:list=[], options:dict={}, flags:list=[], nested_cmds:dict={}):
@@ -57,5 +60,8 @@ def mongoapp(args:list=[], options:dict={}, flags:list=[], nested_cmds:dict={}):
     elif "register" in nested_cmds:
         cmd_info = nested_cmds.pop("register")
         register(**cmd_info)
+    elif "repo" in nested_cmds:
+        cmd_info = nested_cmds.pop("repo")
+        repo(**cmd_info)
         
     
