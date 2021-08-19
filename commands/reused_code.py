@@ -4,6 +4,8 @@ import os
 from mypy_modules.process import process
 from mypy_modules.register import register
 
+# --------------------------------------------------------------------
+# --------------------------------------------------------------------
 GITHUB_URL = f"https://github.com"
 SECURE_DIR = "__secure-dir__"
 
@@ -48,4 +50,35 @@ def remove_repo():
     except process.ProcessErr as err:
         msg = f" Fallo al eliminar el repositorio descargado de github -> {err}"
         raise process.ProcessErr(msg)
+    
+# --------------------------------------------------------------------
+# --------------------------------------------------------------------
+TASKS_DIR = "MongoAppTasks"
+
+def check_input_time(time:str):
+    if len(time) == 5 and time[2] == ":":
+        try:
+            hour = int(time[:2])
+            minutes = int(time[3:])
+        except:
+            msg = "wrong format (HH:MM) or some character is not a number"
+            raise Exception(msg)
+        else:
+            cond1 = hour >= 0 and hour <= 23
+            cond2 = minutes >= 0 and minutes <= 59
+            if cond1:
+                if cond2:
+                    return
+                else:
+                    msg = ("minutes need to be between 0 and 59 " + 
+                        f"-> '{minutes}' introduced")
+                    raise Exception(msg)
+            else:
+                msg = ("hours need to be between 0 and 23 " + 
+                        f"-> '{hour}' introduced")
+                raise Exception(msg)             
+    else:
+        msg = "wrong format -> (HH:MM), example: 11:50"
+        raise Exception(msg)
+    
     

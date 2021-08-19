@@ -1,9 +1,8 @@
 
-import logging
-from mypy_modules import register
+
 import os
 import json
-from mypy_modules.process import process
+import logging
 
 # Imports de definicionde comando
 from mypy_modules.cli import Command, Flag, Option
@@ -11,22 +10,117 @@ from mypy_modules.cli import Command, Flag, Option
 from controllers import db_controller as dbc
 from configs.settings import BASE_DIR
 from ..reused_code import (
-    download_repo, remove_repo, GITHUB_URL, get_github_info, 
-    save_github_info, SECURE_DIR
+    download_repo, check_input_time, remove_repo, GITHUB_URL, 
+    get_github_info, save_github_info, SECURE_DIR, TASKS_DIR
 )
+from mypy_modules.process import process
+from mypy_modules.register import register
 
 def get_upload_cmd() -> Command:
     msg = f"""uploads the mongoapp to the github repository specified"""
     upload = Command(
         'upload', description=msg
     )
+    # --------------------------------
+    create_task_cmd = def_create_task_opt()
+    upload.add_option(create_task_cmd)
+    # --------------------------------
+    show_task_cmd = def_show_task_opt()
+    upload.add_option(show_task_cmd)
+    # --------------------------------
+    delete_task_cmd = def_delete_task_opt()
+    upload.add_option(delete_task_cmd)
 
     return upload
+
+# --------------------------------------------------------------------
+def def_create_task_opt():
+    msg = f"""<HH:MM> schedules an automatic upload. By default the
+    task will be completed daily at the specified time"""
+    create_task = Option(
+        '--create-task', description=msg,
+        extra_arg=True, mandatory=True
+    )
+    
+    return create_task
+
+def def_show_task_opt():
+    msg = f"""shows the created task information"""
+    show_task = Option(
+        '--show-task', description=msg
+    )
+    
+    return show_task
+
+def def_delete_task_opt():
+    msg = f"""Deletes the task previously created"""
+    delete_task = Option(
+        '--delete-task', description=msg
+    )
+    
+    return delete_task
 
 # --------------------------------------------------------------------
 # --------------------------------------------------------------------
 upload_logger = logging.getLogger(__name__)
 def upload(args:list=[], options:dict={}, flags:list=[], nested_cmds:dict={}):
+    # Procesamos las Opciones
+    tasks = register.load('tasks')
+    if tasks is None:
+        tasks = {}
+        register.add('tasks', tasks)
+    if '--create-task' in options:
+        task = tasks.get('upload', None)
+        if task is not None:
+            upload_logger.error(" Ya existe una tarea creada")
+            return
+        time = options['--create-task'][0]
+        try:
+            check_input_time(time)
+        except Exception as err:
+            msg = (f" El tiempo introducido '{time}' no es correcto" + 
+                   f"\n     ERR MSG -> {err}")
+            upload_logger.error(msg)
+            return
+        cmd = (f'SCHTASKS /CREATE /SC DAILY /TN "{TASKS_DIR}\\upload" ' +
+                f'/TR "mongoapp upload" /ST {time}')
+        try:
+            process.run(cmd, shell=True)
+            tasks['upload'] = {'type': 'daily', 'time': time}
+            register.update('tasks', tasks)
+            upload_logger.info(f" Tarea creada con exito a las '{time}'")
+        except Exception as err:
+            err_msg = (" Error al intentar programar la tarea\n" + 
+                        f"      ERR MSG: {err}")
+            upload_logger.error(err_msg)
+        return
+    elif '--show-task' in options:
+        task:dict = tasks.get('upload', None)
+        if task is None:
+            msg = " No existe ninguna tarea creada para este comando"
+            upload_logger.error(msg)
+        else:
+            pretty = json.dumps(task, indent=4, sort_keys=True)
+            print();print(pretty);print()
+        return
+    elif '--delete-task' in options:
+        task = tasks.get('upload', None)
+        if task is None:
+            msg = " No existe ninguna tarea que eliminar para este comando"
+            upload_logger.error(msg)
+            return
+        cmd = (f'SCHTASKS /DELETE /TN "{TASKS_DIR}\\upload" /F')
+        try:
+            process.run(cmd, shell=True)
+            tasks.pop('upload')
+            register.update('tasks', tasks)
+            upload_logger.info(" Tarea eliminada con exito")
+        except Exception as err:
+            err_msg = (" Error al intentar eliminar la tarea\n" + 
+                        f"      ERR MSG: {err}")
+            upload_logger.error(err_msg)
+        return
+    # Ejecutamos el comando principal
     # Descargamos la base de datos de github y eliminamos el registro 
     # anterior de la mongoapp para reemplazarlo
     save_github_info()

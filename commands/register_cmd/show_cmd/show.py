@@ -31,6 +31,7 @@ def show(args:list=[], options:dict={}, flags:list=[], nested_cmds:dict={}):
                 else:
                     msg = f" La clave '{arg}' no existe en el registro"
                     show_logger.error(msg)
+            if not bool(valid_args_dict): return
             pretty = json.dumps(valid_args_dict, indent=4, sort_keys=True)
         else:
             pretty = json.dumps(reg, indent=4, sort_keys=True)

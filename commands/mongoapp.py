@@ -40,7 +40,9 @@ def get_mongoapp_cmd() -> Command:
     mongoapp.nest_cmd(repo_cmd)
 
     return mongoapp
-    
+
+# --------------------------------------------------------------------
+# -------------------------------------------------------------------- 
 def mongoapp(args:list=[], options:dict={}, flags:list=[], nested_cmds:dict={}):
     if "open" in nested_cmds:
         cmd_info = nested_cmds.pop("open")
