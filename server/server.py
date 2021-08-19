@@ -142,13 +142,13 @@ def error(request:HttpRequest) -> HttpResponse:
     return render(request, 'base.html', context_dict)
     
 # --------------------------------------------------------------------
-# ------------------------- DATA BASE VIEWS --------------------------
+# ------------------------- DATABASE VIEWS --------------------------
 @_view_inspector
 def home(request:HttpRequest) -> HttpResponse:
     client_ip = request.META['REMOTE_ADDR']; print(client_ip)
     context_dict = _get_extra_vars("home")
     dbs = dbc.list_dbs()
-    app_dbs = dbc.list_dbs(only_app_dbs=True)
+    app_dbs = dbc.list_dbs(only_app_dbs=True)    
     context_dict["dbs"] = dbs
 
     if not bool(dbs):
@@ -182,10 +182,31 @@ def home(request:HttpRequest) -> HttpResponse:
                 if new_index < len(dbs):
                     dbs.pop(index)
                     dbs.insert(index+1, db)
-            register.update('dbs_order', dbs)  
-            
+            register.update('dbs_order', dbs)    
+        # Miramos a ver si hay que ocultar las bbdd que no sean de la app
+        hidde_form = _clean_form(request.POST)
+        if "hidden" in hidde_form:
+            hidden = hidde_form.pop('hidden')
+            if hidden == 'True':
+                hide = False
+            else:
+                hide = True
+            register.update('hide_dbs', hide)
+        else:
+            hide = register.load('hide_dbs')
+            if hide is None:
+                hide = False
+                register.add('hide_dbs', hide) 
+        context_dict["hide"] = hide
+        if hide:
+            cp_dbs = copy.deepcopy(dbs)
+            for db in cp_dbs:
+                if db not in app_dbs:
+                    dbs.remove(db)
+        # Guardamos los dbs ordenadas y filtradas
         context_dict["dbs"] = dbs 
         context_dict["app_dbs"] = app_dbs
+        
         
     response:HttpResponse = render(request, 'home.html', context_dict)
     return response
@@ -310,6 +331,27 @@ def display_collections(request:HttpRequest, db:str) -> HttpResponse:
                     collections.pop(index)
                     collections.insert(index+1, collection)
             register.update('db_collec_orders', collections, override=False, dict_id=db)
+        # Miramos a ver si hay que ocultar las colecciones que no sean de la app
+        hidde_form = _clean_form(request.POST)
+        if "hidden" in hidde_form:
+            hidden = hidde_form.pop('hidden')
+            if hidden == 'True':
+                hide = False
+            else:
+                hide = True
+            register.update('hide_dbs', hide)
+        else:
+            hide = register.load('hide_dbs')
+            if hide is None:
+                hide = False
+                register.add('hide_dbs', hide) 
+        context_dict["hide"] = hide
+        if hide:
+            cp_dbs = copy.deepcopy(dbs)
+            for db in cp_dbs:
+                if db not in app_dbs:
+                    dbs.remove(db)
+        # Guardamos los dbs ordenadas y filtradas
         
         context_dict["db_collections"] = collections
         context_dict["app_db_collections"] = app_collections

@@ -10,7 +10,25 @@
 {% endblock %}
 
 {% block h %}
-  <h2>Collections of Data Base '{{db}}'</h2>
+  <h2>Collections of Database '{{db}}'</h2>
+  <table style="margin: auto;">
+    <tr>
+      <td style="color: orange;">
+        Show app collections only
+      </td>
+      <td>
+        <form action="/display/{{db}}" method="POST">
+          {% csrf_token %}
+          <button type="submit" class="button" style="padding: 1px 3px; margin: 0;" name="hidden" value="{{hide}}">
+            <img src="{% static 'icons/eye.ico' %}" alt="hide" width="35px" height="35px">
+          </button>
+        </form>
+      </td>
+      <td>
+        <input type="checkbox" name="hidden_dbs" class="checkbox" onclick="return false;" {% if hide %}checked{% endif %}>
+      </td>
+    </tr>
+  </table>
 {% endblock %}
 
 {% block content %}

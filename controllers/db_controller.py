@@ -8,7 +8,7 @@ HOST = "localhost"
 
 client = MongoClient(host=HOST, port=PORT)
 # --------------------------------------------------------------------
-# ----------------------- DATA BASE OPERATIONS -----------------------
+# ----------------------- DATABASE OPERATIONS -----------------------
 def list_dbs(only_app_dbs:bool=False) -> list[str]:
     dbs = client.list_database_names()
     if only_app_dbs:
