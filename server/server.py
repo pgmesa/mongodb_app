@@ -2,7 +2,6 @@
 import json
 import copy
 from contextlib import suppress
-from os import stat
 from pymongo.errors import ServerSelectionTimeoutError
 # django imports
 from django.http import HttpResponse, HttpRequest, HttpResponseRedirect
@@ -333,26 +332,32 @@ def display_collections(request:HttpRequest, db:str) -> HttpResponse:
             register.update('db_collec_orders', collections, override=False, dict_id=db)
         # Miramos a ver si hay que ocultar las colecciones que no sean de la app
         hidde_form = _clean_form(request.POST)
+        hide_collections:dict = register.load('hide_collections')
         if "hidden" in hidde_form:
             hidden = hidde_form.pop('hidden')
             if hidden == 'True':
                 hide = False
             else:
                 hide = True
-            register.update('hide_dbs', hide)
+            hide_collections[db] = hide
+            register.update('hide_collections', hide_collections)
         else:
-            hide = register.load('hide_dbs')
-            if hide is None:
+            if hide_collections is None:
                 hide = False
-                register.add('hide_dbs', hide) 
+                register.add('hide_collections', {db: hide}) 
+            else:
+                hide = hide_collections.get(db, None)
+                if hide is None:
+                    hide = False
+                    hide_collections[db] = hide
+                    register.update('hide_collections', hide_collections) 
         context_dict["hide"] = hide
         if hide:
-            cp_dbs = copy.deepcopy(dbs)
-            for db in cp_dbs:
-                if db not in app_dbs:
-                    dbs.remove(db)
+            cp_collections = copy.deepcopy(collections)
+            for collec in cp_collections:
+                if collec not in app_collections:
+                    collections.remove(collec)
         # Guardamos los dbs ordenadas y filtradas
-        
         context_dict["db_collections"] = collections
         context_dict["app_db_collections"] = app_collections
         

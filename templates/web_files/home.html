@@ -11,14 +11,14 @@
 
 {% block h %}
   <h2>
-    Mongo Databases
+    Mongo Databases Available
   </h2>
   <table style="margin: auto;">
     <tr>
       <td style="color: orange;">
         Show app databases only
       </td>
-      <td>
+      <td style="padding-top: 5px;">
         <form action="/" method="POST">
           {% csrf_token %}
           <button type="submit" class="button" style="padding: 1px 3px; margin: 0;" name="hidden" value="{{hide}}">
@@ -26,7 +26,7 @@
           </button>
         </form>
       </td>
-      <td>
+      <td style="padding: 0 5px;">
         <input type="checkbox" name="hidden_dbs" class="checkbox" onclick="return false;" {% if hide %}checked{% endif %}>
       </td>
     </tr>
