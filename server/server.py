@@ -202,6 +202,9 @@ def home(request:HttpRequest) -> HttpResponse:
             for db in cp_dbs:
                 if db not in app_dbs:
                     dbs.remove(db)
+        if len(dbs) == 0:
+            err_msg = "No existen bases de datos controladas por la aplicacion"
+            context_dict["err_msg"] = err_msg
         # Guardamos los dbs ordenadas y filtradas
         context_dict["dbs"] = dbs 
         context_dict["app_dbs"] = app_dbs
@@ -343,20 +346,21 @@ def display_collections(request:HttpRequest, db:str) -> HttpResponse:
             register.update('hide_collections', hide_collections)
         else:
             if hide_collections is None:
-                hide = False
-                register.add('hide_collections', {db: hide}) 
-            else:
-                hide = hide_collections.get(db, None)
-                if hide is None:
-                    hide = False
-                    hide_collections[db] = hide
-                    register.update('hide_collections', hide_collections) 
+                dbs = dbc.list_dbs(); hide_collections = {}
+                for db in dbs:
+                    hide_collections[db] = False
+                register.add('hide_collections', hide_collections) 
+            hide = hide_collections[db]
         context_dict["hide"] = hide
         if hide:
             cp_collections = copy.deepcopy(collections)
             for collec in cp_collections:
                 if collec not in app_collections:
                     collections.remove(collec)
+        if len(collections) == 0:
+            err_msg = ("No existen colecciones controladas por la aplicacion " +
+                            "en esta base de datos")
+            context_dict["err_msg"] = err_msg
         # Guardamos los dbs ordenadas y filtradas
         context_dict["db_collections"] = collections
         context_dict["app_db_collections"] = app_collections
