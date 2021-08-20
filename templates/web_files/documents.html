@@ -170,7 +170,7 @@
         <tr>
           <td style="color: red;">{{forloop.counter}}.</td>
           {% for attr_dict in model.values %}
-            <td style="padding: 10px">{{doc|lookup:attr_dict.name}}</td>
+            <td style="padding: 10px"><div style="white-space: pre-wrap;">{{doc|lookup:attr_dict.name}}</div></td>
           {% endfor %}
           <td style="padding: 0 5px;">
             <form action="/update/{{db}}/{{collection}}/{{doc.id}}" method="GET">

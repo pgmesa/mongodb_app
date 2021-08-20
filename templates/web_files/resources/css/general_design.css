@@ -49,18 +49,19 @@ input[type="text"]{
 
 /* Tiene en cuanta el numero de pixeles que tiene en horizontal (En moviles con alta resolución tienen muchos pixeles horizontales aunque la 
 pantalla sea pequeña*/ 
-@media (max-width: 480px){ /*1em = 16 px*/
+/*1em = 16 px*/
+/* @media (max-width: 480px){ 
     header, footer {
         visibility: hidden;
     }
-}
+} */
 /*Tiene en cuenta solo el ancho de la pantalla del dispositivo, da igual si tiene mucha resolución de pixeles o no,(utiliza un tamaño de pixel 
 estándar para medidas de tamaño, no los que utiliza el dispositivo para su resolución, que pueden ser mucho más pequeños*/
-@media (max-device-width: 480px){
+/* @media (max-device-width: 480px){
     header, footer {
         visibility: hidden;
     }
-}
+} */
 /* los dos medias unidos se podrian poner asi: "@media only screen and (max-width: 700px), only screen and (max-device-width: 700px) {}"*/
 
 

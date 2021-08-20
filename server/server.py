@@ -104,10 +104,10 @@ def _view_inspector(func):
             f"--> MENSAJE DE ERROR:\n\n({str(err)})")
             _set_extra_vars({"err_msg": err_msg, "conserv_format": True}, 'error')
             return HttpResponseRedirect('/error/')
-        # except Exception as err:
-        #     err_msg = f"ERROR: {err}"
-        #     _set_extra_vars({"err_msg": err_msg, "failed_path": args[0].path_info}, 'error')
-        #     return HttpResponseRedirect('/error/')
+        except Exception as err:
+            err_msg = f"ERROR: {err}"
+            _set_extra_vars({"err_msg": err_msg, "failed_path": args[0].path_info}, 'error')
+            return HttpResponseRedirect('/error/')
     return view_inspector
 
 def _order_lists(list_to_order:list, order_list:list) -> list:
@@ -316,7 +316,6 @@ def display_collections(request:HttpRequest, db:str) -> HttpResponse:
             register.update('db_collec_orders', collec_orders)
         # See if up or down button are pressed
         post_dict = _clean_form(request.POST)
-        print(post_dict)
         if bool(post_dict):
             if "up" in post_dict:
                 collection = post_dict.pop("up")
@@ -765,13 +764,28 @@ def update_document(request:HttpRequest, db:str, collection:str, doc_id:str) -> 
     for var, value in extra_vars.items():
         context_dict[var] = value
     view_params = register.load('view_params')
-    if view_params["redirected"]:
-        context_dict["textareas"] = []
         
     doc = dbc.find_doc_by_id(db, collection, doc_id)
+    print(doc)
     context_dict["doc_id"] = doc_id
     context_dict["values"] = doc
     context_dict["model"] = dbc.get_model(db, collection)
+    
+    # Vemos si nos han redirigido a ha sido un submit de textareas
+    if view_params["redirected"]:
+        # Vemos si algun texto supera los 22 caracteres para que se
+        # presente directamente con textarea y no pierda el formato de
+        # saltos de linea etc
+        model = context_dict["model"]
+        initial_textareas = []
+        for attr_dict in model.values():
+            tp = attr_dict["type"]; name = attr_dict["name"]
+            if tp == 'str' :
+                string = doc[name]
+                cond2 = "\n" in string or "\r" in string
+                if len(string) > 21 or cond2:
+                    initial_textareas.append(name)
+        context_dict["textareas"] = initial_textareas
     
     form_dict = _clean_form(request.POST)
     if bool(form_dict):
@@ -900,7 +914,6 @@ def filter_documents(request:HttpRequest, db:str, collection:str) -> HttpRespons
 @_view_inspector
 def sort_documents(request:HttpRequest, db:str, collection:str) -> HttpResponse:
     context_dict = _get_extra_vars('sort_documents')
-    print(context_dict)
     context_dict.update({"db": db, "collection": collection})
     if "update_sorter" in context_dict:
         sorter:dict = register.load('sorters')[f"{db}.{collection}"]
@@ -909,7 +922,6 @@ def sort_documents(request:HttpRequest, db:str, collection:str) -> HttpResponse:
     else:
         context_dict["values"] = {}
         view_params= register.load('view_params')
-        print(view_params)
         if "sort_attrs" not in context_dict or view_params["redirected"]:
             context_dict["sort_attrs"] = []
     
