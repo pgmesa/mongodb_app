@@ -68,7 +68,11 @@
               {% if attr_dict.name in textareas %}
                 <textarea name="{{attr_dict.name}}" style="font-size: 20px;" cols="27" rows="5">{{values|lookup:attr_dict.name}}</textarea>
               {% else %}
-                <input type="text" name="{{attr_dict.name}}" value="{{values|lookup:attr_dict.name}}">
+                {% if not values|lookup:attr_dict.name == '-' %}
+                  <input type="text" name="{{attr_dict.name}}" value="{{values|lookup:attr_dict.name}}">
+                {% else %}
+                  <input type="text" name="{{attr_dict.name}}" value="">
+                {% endif %}
               {% endif %}
             </td>
             {% if attr_dict.type == 'str' %}

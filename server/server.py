@@ -45,7 +45,7 @@ def _set_extra_vars(view_extra_vars:dict, view_name:str) -> None:
                 extra_vars[view_name][var] = value
         register.update("extra_vars", extra_vars)
             
-def _parse_doc_attrs(model:dict, doc:dict) -> dict:
+def _parse_doc_attrs(model:dict, doc:dict, filter_=False) -> dict:
     parsed_doc = copy.deepcopy(doc)
     for attr_dict in model.values():
         name = attr_dict["name"]; str_type = attr_dict["type"]
@@ -53,7 +53,10 @@ def _parse_doc_attrs(model:dict, doc:dict) -> dict:
             value = doc[name]
         except KeyError:
             continue
-        if value == "": continue
+        if value == "": 
+            if not filter_:
+                parsed_doc[name] = "-"
+            continue
         if str_type == 'str':
             type_func = str
         elif str_type == 'int':
@@ -662,7 +665,7 @@ def display_documents(request:HttpRequest, db:str, collection:str , extra_vars:d
                 lenght = len(docs)
                 sum_ = 0
                 for doc in docs:
-                    if doc[field] == '': lenght -= 1
+                    if doc[field] == '-': lenght -= 1
                     else: sum_ += doc[field]
                 if operator == 'avg': 
                     if lenght > 0:
@@ -887,7 +890,7 @@ def filter_documents(request:HttpRequest, db:str, collection:str) -> HttpRespons
         if 'filter' in form_dict:
             form_dict.pop('filter')
             try:
-                filter_dict = _parse_doc_attrs(model, form_dict)
+                filter_dict = _parse_doc_attrs(model, form_dict, filter_=True)
             except Exception as err:
                 context_dict["err_msg"] = str(err)
             else:
