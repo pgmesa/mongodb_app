@@ -104,10 +104,10 @@ def _view_inspector(func):
             f"--> MENSAJE DE ERROR:\n\n({str(err)})")
             _set_extra_vars({"err_msg": err_msg, "conserv_format": True}, 'error')
             return HttpResponseRedirect('/error/')
-        except Exception as err:
-            err_msg = f"ERROR: {err}"
-            _set_extra_vars({"err_msg": err_msg, "failed_path": args[0].path_info}, 'error')
-            return HttpResponseRedirect('/error/')
+        # except Exception as err:
+        #     err_msg = f"ERROR: {err}"
+        #     _set_extra_vars({"err_msg": err_msg, "failed_path": args[0].path_info}, 'error')
+        #     return HttpResponseRedirect('/error/')
     return view_inspector
 
 def _order_lists(list_to_order:list, order_list:list) -> list:
@@ -349,8 +349,11 @@ def display_collections(request:HttpRequest, db:str) -> HttpResponse:
                 dbs = dbc.list_dbs(); hide_collections = {}
                 for db in dbs:
                     hide_collections[db] = False
-                register.add('hide_collections', hide_collections) 
-            hide = hide_collections[db]
+                register.add('hide_collections', hide_collections)
+            hide = hide_collections.get(db, None)
+            if hide is None:
+                hide_collections[db] = False
+                register.update('hide_collections', hide_collections)
         context_dict["hide"] = hide
         if hide:
             cp_collections = copy.deepcopy(collections)
