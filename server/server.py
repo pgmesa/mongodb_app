@@ -11,7 +11,6 @@ from django.shortcuts import render
 from controllers import db_controller as dbc
 from mypy_modules.register import register
 
-
 def _clean_form(form:QueryDict) -> dict:
     cleaned = form.dict()
     with suppress(Exception):
@@ -133,6 +132,33 @@ def _order_lists(list_to_order:list, order_list:list) -> list:
         
     return ordered_list
 
+config_keys = ["extra_vars", "view_params", "tasks", "github", "hide_dbs"]
+
+def _delete_data(name:str, copy_to_name:str=None):
+    reg = register.load()
+    new_reg = copy.deepcopy(reg)
+    if reg is not None:
+        for key in reg:
+            if key not in config_keys:
+                values = reg[key]
+                type_values = type(values)
+                if (type_values is list or type_values is dict) and name in values:
+                    if type_values is list:
+                        index = values.index(name)
+                        values.pop(index)
+                        if copy_to_name is not None:
+                            values.insert(index, copy_to_name)
+                        new_reg[key] = values
+                    elif type_values is dict:
+                        new_values = {}
+                        for val_key, val in values.items():
+                            if val_key != name:
+                                new_values[val_key] = val
+                            elif copy_to_name is not None:
+                                new_values[copy_to_name] = val
+                        new_reg[key] = new_values
+    register.override(new_reg)
+    
 # --------------------------------------------------------------------
 # --------------------------- ERROR VIEW -----------------------------
 def error(request:HttpRequest) -> HttpResponse:
@@ -259,6 +285,11 @@ def update_db(request:HttpRequest, db:str) -> HttpResponse:
             context_dict["err_msg"] = err_msg
         else:
             if new_name != db:
+                # Actualizamos del registro la info asociada a la db y sus colecciones
+                _delete_data(db, copy_to_name=new_name)
+                collections = dbc.list_collections(db)
+                for colec in collections:
+                    _delete_data(f'{db}.{colec}', copy_to_name=f'{new_name}.{colec}')
                 dbc.rename_db(db, new_name)
             msg = (f"Base de Datos '{db}' actualizada con exito " + 
                     f"-> '{new_name}'")
@@ -273,6 +304,11 @@ def delete_db(request:HttpRequest, db:str) -> HttpResponse:
     context_dict = {"db": db}; conf_dict = _clean_form(request.POST)
     if bool(conf_dict): 
         if "yes" in conf_dict:
+            # Eliminamos del registro la info asociada a la db y sus colecciones
+            _delete_data(db)
+            collections = dbc.list_collections(db)
+            for colec in collections:
+                _delete_data(f'{db}.{colec}')
             dbc.drop_db(db)
             msg = f"Base de Datos '{db}' eliminada con exito"
             context_dict["msg"] = msg
@@ -553,6 +589,8 @@ def update_collection(request:HttpRequest, db:str, collection:str) -> HttpRespon
             context_dict["err_msg"] = err_msg
         else:
             if new_name != collection:
+                # Actualizamos del registro la info asociada a la coleccion
+                _delete_data(f'{db}.{collection}', copy_to_name=f'{db}.{new_name}')
                 dbc.rename_collection(db, collection, new_name)
             msg = (f"Coleccion '{collection}' actualizada con exito " + 
                     f"-> '{new_name}'")
@@ -568,6 +606,8 @@ def delete_collection(request:HttpRequest, db:str, collection:str) -> HttpRespon
     conf_dict = _clean_form(request.POST)
     if bool(conf_dict): 
         if "yes" in conf_dict:
+            # Eliminamos del registro la info asociada a la coleccion
+            _delete_data(f"{db}.{collection}")
             dbc.remove_collecttion(db, collection)
             msg = f"Coleccion '{collection}' eliminada con exito"
             context_dict["msg"] = msg
