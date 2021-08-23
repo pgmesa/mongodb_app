@@ -809,7 +809,6 @@ def update_document(request:HttpRequest, db:str, collection:str, doc_id:str) -> 
     view_params = register.load('view_params')
         
     doc = dbc.find_doc_by_id(db, collection, doc_id)
-    print(doc)
     context_dict["doc_id"] = doc_id
     context_dict["values"] = doc
     context_dict["model"] = dbc.get_model(db, collection)
