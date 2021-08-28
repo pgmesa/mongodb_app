@@ -23,5 +23,6 @@ def start(args:list=[], options:dict={}, flags:list=[], nested_cmds:dict={}):
     cmd += " & exit"
     final_cmd = f'start cmd /k "{cmd}"'
     process.Popen(final_cmd, shell=True)
+    start_logger.info(" Servidor Iniciado...")
   
         

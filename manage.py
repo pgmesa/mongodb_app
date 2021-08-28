@@ -2,7 +2,6 @@
 """Django's command-line utility for administrative tasks."""
 import os
 import sys
-from mypy_modules.register import register
 
 def main():
     """Run administrative tasks."""
