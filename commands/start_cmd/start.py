@@ -1,5 +1,6 @@
 
 import logging
+import os
 # Imports de definicionde comando
 from mypy_modules.cli import Command, Flag, Option
 # Imports para la funcion del comando
@@ -16,6 +17,9 @@ start_logger = logging.getLogger(__name__)
 def start(args:list=[], options:dict={}, flags:list=[], nested_cmds:dict={}):
     # Llamar a .bat para que ejecute la orden
     start_logger.info(" Iniciando servidor...")
+    if not os.path.exists('db.sqlite3'):
+        start_logger.info(" Aplicando migraciones...")
+        process.run('python manage.py migrate', shell=True)
     cmd = f" cd {BASE_DIR/'appvenv/Scripts'}"
     cmd += " & activate"
     cmd += f"& cd {BASE_DIR}"
