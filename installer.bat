@@ -1,6 +1,20 @@
 @echo off
 
-@REM  Ver si virtualenv esta instalado
+@REM Ver si python esta instalado
+call python --version > nul
+if '%errorlevel%' NEQ '0' (
+    echo ERROR: Python is not installed, please install it before continuing
+    exit /b
+)
+@REM Ver si pip esta instalado
+call pip --version > nul
+
+if '%errorlevel%' NEQ '0' (
+    echo ERROR: Python package module 'pip' is not installed, please install it before continuing
+    exit /b
+)
+
+@REM  Ver si virtualenv esta instalado y si no lo instalamos
 call pip show virtualenv > nul
 if '%errorlevel%' NEQ '0' (
     pip install virtualenv
@@ -24,6 +38,10 @@ echo cd "%__CD__%" >> %batch_file%
 echo call python main.py %%* >> %batch_file%
 echo call deactivate >> %batch_file%
 echo cd %%calling_dir%% >> %batch_file%
+
+if "%1" == "--not-global" (
+    exit /b
+)
 
 :: BatchGotAdmin
 :-------------------------------------
