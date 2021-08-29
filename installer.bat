@@ -19,17 +19,12 @@ call pip show virtualenv > nul
 if '%errorlevel%' NEQ '0' (
     echo Instalando virtualenv...
     call pip install virtualenv
-    call virtualenv --version
-    if '%errorlevel%' NEQ '0' (
-        echo El paquete 'virtualenv' no se ha instalado correctamente
-        exit /b
-    )
 )
 
 @REM Crear el virtualenv
 set venv_name=appvenv
 echo Creando entorno virtual '%venv_name%'...
-call virtualenv %venv_name%
+call py -m virtualenv %venv_name%
 call .\%venv_name%\Scripts\activate
 echo Instalando dependencias...
 call pip install -r requirements.txt
