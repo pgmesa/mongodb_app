@@ -106,6 +106,7 @@ def _view_inspector(func):
             err_msg = f"ERROR: {err}"
             dic = {"err_msg": err_msg, "conserv_format": True, "failed_path": args[0].path_info}
             _set_extra_vars(dic, 'error')
+            return HttpResponseRedirect('/error/')
         except ServerSelectionTimeoutError as err:
             err_msg = (f"Fallo al conectarse a la base de datos " +
             f"(HOST={dbc.HOST}, PORT={dbc.PORT}), conexión rechazada " +
