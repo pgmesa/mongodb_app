@@ -1,7 +1,7 @@
 @echo off
 
 @REM Ver si python esta instalado
-call python --version > nul
+call py --version > nul
 if '%errorlevel%' NEQ '0' (
     echo ERROR: Python is not installed, please install it before continuing
     exit /b
@@ -18,7 +18,12 @@ if '%errorlevel%' NEQ '0' (
 call pip show virtualenv > nul
 if '%errorlevel%' NEQ '0' (
     echo Instalando virtualenv...
-    pip install virtualenv
+    call pip install virtualenv
+    call virtualenv --version
+    if '%errorlevel%' NEQ '0' (
+        echo El paquete 'virtualenv' no se ha instalado correctamente
+        exit /b
+    )
 )
 
 @REM Crear el virtualenv
@@ -39,7 +44,7 @@ echo set calling_dir=%%cd%% >> %batch_file%
 echo cd "%__CD__%appvenv\Scripts" >> %batch_file%
 echo call activate >> %batch_file%
 echo cd "%__CD__%" >> %batch_file% 
-echo call python main.py %%* >> %batch_file%
+echo call py main.py %%* >> %batch_file%
 echo call deactivate >> %batch_file%
 echo cd %%calling_dir%% >> %batch_file%
 
