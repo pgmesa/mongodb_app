@@ -7,6 +7,7 @@ from mypy_modules.cli import Command, Option, Flag
 # Imports para la funcion del comando
 from controllers import db_controller as dbc
 from mypy_modules.register import register
+from ..register_cmd.clear_cmd.clear import clear as clear_register
 
 def get_clear_cmd() -> Command:
     clear = Command(
@@ -33,7 +34,8 @@ def clear(args:list=[], options:dict={}, flags:list=[], nested_cmds:dict={}):
             dbc.drop_db(db)
             clear_logger.info(f"'{db}' ha sido eliminada")
         clear_logger.info(" Eliminando registro...")
-        register.remove()
+        # mongoapp register clear
+        clear_register(flags=['-y'])
         clear_logger.info(" Eliminando migraciones...")
         os.remove('db.sqlite3')
     except Exception as err:

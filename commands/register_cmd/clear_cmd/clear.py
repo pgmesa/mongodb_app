@@ -4,6 +4,7 @@ import logging
 from mypy_modules.cli import Command, Flag, Option
 # Imports para la funcion del comando
 from mypy_modules.register import register
+from ..rm_cmd.rm import rm
 
 def get_clear_cmd() -> Command:
     msg = """Deletes every key of the register"""
@@ -26,8 +27,13 @@ def clear(args:list=[], options:dict={}, flags:list=[], nested_cmds:dict={}):
             clear_logger.info(" Operacion cancelada")
             return
     try:
-        register.remove()
-        clear_logger.info(" Registro eliminado con exito")
+        reg = register.load()
+        if reg is None:
+            clear_logger.warning(" El registro ya esta vacio")
+        else:
+            reg_keys = list(reg.keys())
+            rm(args=reg_keys)
+            clear_logger.info(" Registro eliminado con exito")
     except Exception as err:
         msg = (f" Fallo al intentar eliminar el registro" + 
                 f"\n    ERROR MSG: {err}")
