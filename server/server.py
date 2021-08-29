@@ -10,6 +10,7 @@ from django.shortcuts import render
 # program imports
 from controllers import db_controller as dbc
 from mypy_modules.register import register
+from commands.reused_code import MongoNotInstalledError, check_mongo_installed
 
 def _clean_form(form:QueryDict) -> dict:
     cleaned = form.dict()
@@ -99,7 +100,12 @@ def _view_inspector(func):
         view_params["last_view"] = func.__name__
         register.update('view_params', view_params)
         try:
+            check_mongo_installed()
             return func(*args, **kwargs)
+        except MongoNotInstalledError as err:
+            err_msg = f"ERROR: {err}"
+            dic = {"err_msg": err_msg, "conserv_format": True, "failed_path": args[0].path_info}
+            _set_extra_vars(dic, 'error')
         except ServerSelectionTimeoutError as err:
             err_msg = (f"Fallo al conectarse a la base de datos " +
             f"(HOST={dbc.HOST}, PORT={dbc.PORT}), conexión rechazada " +
