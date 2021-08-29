@@ -9,8 +9,8 @@ from mypy_modules.cli import Command, Flag, Option
 from controllers import db_controller as dbc
 from configs.settings import BASE_DIR
 from ..reused_code import (
-    download_repo, check_input_time, is_mongo_intalled, remove_repo, GITHUB_URL, 
-    get_github_info, save_github_info, SECURE_DIR, TASKS_DIR
+    download_repo, check_input_time, check_mongo_installed, remove_repo, 
+    GITHUB_URL, get_github_info, save_github_info, SECURE_DIR, TASKS_DIR
 )
 from mypy_modules.process import process
 from mypy_modules.register import register
@@ -63,8 +63,10 @@ def def_delete_task_opt():
 # --------------------------------------------------------------------
 upload_logger = logging.getLogger(__name__)
 def upload(args:list=[], options:dict={}, flags:list=[], nested_cmds:dict={}):
-    if not is_mongo_intalled():
-        upload_logger.error(" MongoDB no esta instalado")
+    try:
+        check_mongo_installed()
+    except Exception as err:
+        upload_logger.error(err)
         return
     # Procesamos las Opciones
     tasks = register.load('tasks')

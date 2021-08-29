@@ -69,14 +69,14 @@ def def_dir_opt() -> Option:
 
 def def_reveal_opt() -> Option:
     reveal = Option(
-        '--reveal', description='Reveals the app in the file explorer'
+        '--reveal', description='reveals the app in the file explorer'
     )
     
     return reveal
     
 def def_cmd_opt() -> Option:
     msg = """
-    Opens a cmd in the app location directory
+    opens a cmd in the app location directory
     """
     cmd = Option(
         '--cmd', description=msg
@@ -86,8 +86,8 @@ def def_cmd_opt() -> Option:
 
 def def_uninstall_info_opt() -> Option:
     msg = """
-    shows info about the steps to follow in order to uninstall and empty
-    the app in the current computer
+    shows info about the steps to follow in order to uninstall and delete
+    the app information in the current computer
     """
     uninstall_info = Option(
         '--uninstall-info', description=msg
