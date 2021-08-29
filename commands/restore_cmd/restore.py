@@ -98,7 +98,7 @@ def restore(args:list=[], options:dict={}, flags:list=[], nested_cmds:dict={}):
                         dbc.add_document(db, collection, doc)
     else:
         msg = (" No existe ningun estado anterior guardado en el repositorio " +
-                f"{GITHUB_URL}/{github_user}/{repo_name}")
+                f"{GITHUB_URL}/{github_user}/{repo_name}/{dir_name}")
         restore_logger.error(msg)
     # Eliminamos el repositorio descargado anteriormente
     try:
