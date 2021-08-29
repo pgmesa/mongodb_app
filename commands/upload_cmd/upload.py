@@ -1,5 +1,4 @@
 
-
 import os
 import json
 import logging
@@ -10,7 +9,7 @@ from mypy_modules.cli import Command, Flag, Option
 from controllers import db_controller as dbc
 from configs.settings import BASE_DIR
 from ..reused_code import (
-    download_repo, check_input_time, remove_repo, GITHUB_URL, 
+    download_repo, check_input_time, is_mongo_intalled, remove_repo, GITHUB_URL, 
     get_github_info, save_github_info, SECURE_DIR, TASKS_DIR
 )
 from mypy_modules.process import process
@@ -64,6 +63,9 @@ def def_delete_task_opt():
 # --------------------------------------------------------------------
 upload_logger = logging.getLogger(__name__)
 def upload(args:list=[], options:dict={}, flags:list=[], nested_cmds:dict={}):
+    if not is_mongo_intalled():
+        upload_logger.error(" MongoDB no esta instalado")
+        return
     # Procesamos las Opciones
     tasks = register.load('tasks')
     if tasks is None:
@@ -157,14 +159,22 @@ def upload(args:list=[], options:dict={}, flags:list=[], nested_cmds:dict={}):
     msg = f" Actualizando base de datos '{dir_name}' en github..."
     upload_logger.info(msg)
     try:
-        order = f'cd {SECURE_DIR}'
-        order += ' & git add .'
-        order += f' & git commit -m "Actualizando {dir_name}"'
+        # git config --global --unset user.name
+        # git config --global user.email "you@example.com"
+        orders = []
+        cd = f'cd {SECURE_DIR}'
+        order1 = cd + ' & git add .'
+        orders.append(order1)
+        order2 = cd + f' & git commit -m "Actualizando {dir_name}"'
+        orders.append(order2)
         branches = process.run(f"cd {SECURE_DIR} & git branch", shell=True)
         if branches == "":
-            order += ' & git branch -M main'
-        order += ' & git push origin main'
-        process.run(order, shell=True)
+            order3 = cd + ' & git branch -M main'
+            orders.append(order3)
+        order4 = cd + ' & git push origin main'
+        orders.append(order4)
+        for order in orders:
+            process.run(order, shell=True)
     except process.ProcessErr as err:
         msg = f" No se ha podido actualizar la informacion en github -> {err}"
         upload_logger.error(msg)

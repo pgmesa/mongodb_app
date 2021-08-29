@@ -9,6 +9,10 @@ from mypy_modules.register import register
 GITHUB_URL = f"https://github.com"
 SECURE_DIR = "__secure-dir__"
 
+def is_mongo_intalled() -> bool:
+    ...
+    return True
+
 def save_github_info(change=False):
     github_info = register.load('github')
     if github_info is None or change:

@@ -17,18 +17,22 @@ if '%errorlevel%' NEQ '0' (
 @REM  Ver si virtualenv esta instalado y si no lo instalamos
 call pip show virtualenv > nul
 if '%errorlevel%' NEQ '0' (
+    echo Instalando virtualenv...
     pip install virtualenv
 )
 
 @REM Crear el virtualenv
 set venv_name=appvenv
+echo Creando entorno virtual '%venv_name%'...
 call virtualenv %venv_name%
 call .\%venv_name%\Scripts\activate
+echo Instalando dependencias...
 call pip install -r requirements.txt
 call deactivate
 
 @REM Crear el mongoapp.bat file y moverlo a System32 para su uso global
 set batch_file=mongoapp.bat
+echo Creando batch file '%batch_file%'...
 
 echo @echo off > %batch_file%
 echo set calling_dir=%%cd%% >> %batch_file%
@@ -39,10 +43,11 @@ echo call python main.py %%* >> %batch_file%
 echo call deactivate >> %batch_file%
 echo cd %%calling_dir%% >> %batch_file%
 
-if "%1" == "--not-global" (
+if "%1" == "--local" (
     exit /b
 )
 
+echo Instalando globalmente el archivo '%batch_file%'...
 :: BatchGotAdmin
 :-------------------------------------
 REM  --> Check for permissions

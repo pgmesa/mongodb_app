@@ -38,6 +38,8 @@ def run(cmd, stdout=True, stderr=True, shell=False) -> str:
         err_msg = f" Fallo al ejecutar el comando '{cmd}'"
         if stderr:
             err = process.stderr.decode()[:-1]
+            if err == "" and stdout:
+                err = process.stdout.decode()
             err_msg += f"\nMensaje de error: -> '{err}'"
         elif stdout:
             err_msg = process.stdout.decode()

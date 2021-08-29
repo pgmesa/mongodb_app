@@ -2,7 +2,7 @@
 import logging
 from mypy_modules.process import process
 
-# Imports de definicionde comando
+# Imports de definicion de comando
 from mypy_modules.cli import Command, Flag, Option
 from .add_cmd.add import get_add_cmd, add
 from .rm_cmd.rm import get_rm_cmd, rm
