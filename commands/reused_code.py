@@ -17,7 +17,8 @@ def check_mongo_installed():
     try:
         process.run(f'cd "{MONGO_PATH}" & mongod --version', shell=True)
     except process.ProcessErr as err:
-        err_msg = " MongoDB no esta instalado\n -> No se ha encontrado en "
+        err_msg = (" La version 4.4 de MongoDB no esta instalada" + 
+                        "\n -> No se ha encontrado en ")
         err_msg += f"'{MONGO_PATH}' \n      ERR MSG: {err}"
         raise MongoNotInstalledError(err_msg)
 
