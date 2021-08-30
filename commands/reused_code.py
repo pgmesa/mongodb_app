@@ -1,5 +1,7 @@
 
 import os
+import subprocess
+from subprocess import PIPE, CalledProcessError
 
 from mypy_modules.process import process
 from mypy_modules.register import register
@@ -49,12 +51,14 @@ def download_repo():
     # Descargamos el repositorio de bases de datos almacenado en github
     if os.path.exists(SECURE_DIR):
         remove_repo()
-    try:
-        process.run(f"git clone {GITHUB_URL}/{github_user}/{repo_name} {SECURE_DIR}", shell=True)
-    except process.ProcessErr as err:
+    cmd = f"git clone {GITHUB_URL}/{github_user}/{repo_name} {SECURE_DIR}"
+    proc = subprocess.Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE, text=True)
+    # proc.wait()
+    stdout, stderr = proc.communicate()
+    if proc.returncode != 0:
         msg = (" Error al descargar el repositorio de github " + 
-            f"({GITHUB_URL}/{github_user}/{repo_name}) -> {err}")
-        raise process.ProcessErr(msg) 
+        f"({GITHUB_URL}/{github_user}/{repo_name}) -> {stderr}")
+        raise process.ProcessErr(msg)
 
 def remove_repo():
     # Eliminamos la base de datos anterior descargada (carpeta '{REPO_NAME}')

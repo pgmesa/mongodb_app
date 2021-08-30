@@ -2,6 +2,7 @@
 import os
 import json
 import logging
+import subprocess
 
 # Imports de definicionde comando
 from mypy_modules.cli import Command, Flag, Option
@@ -160,26 +161,26 @@ def upload(args:list=[], options:dict={}, flags:list=[], nested_cmds:dict={}):
     # Actualizamos la informacion en github
     msg = f" Actualizando base de datos '{dir_name}' en github..."
     upload_logger.info(msg)
-    try:
-        # git config --global --unset user.name
-        # git config --global user.email "you@example.com"
-        orders = []
-        cd = f'cd {SECURE_DIR}'
-        order1 = cd + ' & git add .'
-        orders.append(order1)
-        order2 = cd + f' & git commit -m "Actualizando {dir_name}"'
-        orders.append(order2)
-        branches = process.run(f"cd {SECURE_DIR} & git branch", shell=True)
-        if branches == "":
-            order3 = cd + ' & git branch -M main'
-            orders.append(order3)
-        order4 = cd + ' & git push origin main'
-        orders.append(order4)
-        for order in orders:
-            process.run(order, shell=True)
-    except process.ProcessErr as err:
-        msg = f" No se ha podido actualizar la informacion en github -> {err}"
-        upload_logger.error(msg)
+    # git config --global --unset user.name
+    # git config --global user.email "you@example.com"
+    orders = []
+    order1 = 'git add .'
+    orders.append(order1)
+    order2 = f'git commit -m "Actualizando {dir_name}"'
+    orders.append(order2)
+    branches = process.run(f"cd {SECURE_DIR} & git branch", shell=True)
+    if branches == "":
+        order3 = 'git branch -M main'
+        orders.append(order3)
+    order4 = 'git push origin main'
+    orders.append(order4)
+    for order in orders:
+        proc = subprocess.Popen(order, shell=True, cwd=SECURE_DIR)
+        proc.wait()
+        if proc.returncode != 0:
+            msg = f" No se ha podido actualizar la informacion en github"
+            upload_logger.error(msg)
+            break
     else:
         upload_logger.info(" Cambios actualizados en github con exito")
     # Eliminamos el repositorio descargado anteriormente
