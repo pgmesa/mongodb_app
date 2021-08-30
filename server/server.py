@@ -10,7 +10,7 @@ from django.shortcuts import render
 # program imports
 from controllers import db_controller as dbc
 from mypy_modules.register import register
-from commands.reused_code import MongoNotInstalledError, check_mongo_installed
+from commands.reused_code import NotInstalledError, check_mongo_installed
 
 def _clean_form(form:QueryDict) -> dict:
     cleaned = form.dict()
@@ -102,7 +102,7 @@ def _view_inspector(func):
         try:
             check_mongo_installed()
             return func(*args, **kwargs)
-        except MongoNotInstalledError as err:
+        except NotInstalledError as err:
             err_msg = f"ERROR: {err}"
             dic = {"err_msg": err_msg, "conserv_format": True, "failed_path": args[0].path_info}
             _set_extra_vars(dic, 'error')

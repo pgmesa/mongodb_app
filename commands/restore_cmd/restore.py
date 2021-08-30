@@ -10,8 +10,8 @@ from mypy_modules.cli import Command, Flag, Option
 from controllers import db_controller as dbc
 from configs.settings import BASE_DIR
 from ..reused_code import (
-    MongoNotInstalledError, download_repo, check_mongo_installed, remove_repo, GITHUB_URL,
-    get_github_info, save_github_info, SECURE_DIR
+    NotInstalledError, download_repo, check_mongo_installed, remove_repo, GITHUB_URL,
+    get_github_info, save_github_info, SECURE_DIR, check_git_installed
 )
 
 def get_restore_cmd() -> Command:
@@ -29,7 +29,8 @@ restore_logger = logging.getLogger(__name__)
 def restore(args:list=[], options:dict={}, flags:list=[], nested_cmds:dict={}):
     try:
         check_mongo_installed()
-    except MongoNotInstalledError as err:
+        check_git_installed()
+    except NotInstalledError as err:
         restore_logger.error(err)
         return
     save_github_info()

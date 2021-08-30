@@ -113,7 +113,7 @@ def mongoapp(args:list=[], options:dict={}, flags:list=[], nested_cmds:dict={}):
         In order to delete the app and its information (irreversibly) from 
         the computer follow this steps:
         1. Close the server and make sure the app is not running
-        2. Open a cmd and type 'mongoapp clear'
+        2. Open a cmd and type 'mongoapp clear -y'
         3. Type 'mongoapp --cmd'
         4. In the new cmd window that the step 3 has openned, execute the 
            uninstall.bat file

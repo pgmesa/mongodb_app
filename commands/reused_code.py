@@ -12,7 +12,7 @@ GITHUB_URL = f"https://github.com"
 SECURE_DIR = "__secure-dir__"
 MONGO_PATH = "C:/Program Files/MongoDB/Server/4.4/bin"
 
-class MongoNotInstalledError(Exception):
+class NotInstalledError(Exception):
     pass
 
 def check_mongo_installed():
@@ -22,8 +22,16 @@ def check_mongo_installed():
         err_msg = (" La version 4.4 de MongoDB no esta instalada" + 
                         "\n -> No se ha encontrado en ")
         err_msg += f"'{MONGO_PATH}' \n      ERR MSG: {err}"
-        raise MongoNotInstalledError(err_msg)
+        raise NotInstalledError(err_msg)
 
+def check_git_installed():
+    try:
+        process.run('git --version', shell=True)
+    except process.ProcessErr as err:
+        err_msg = (" 'git' no se encuentra instalado")
+        err_msg += f"'\n      ERR MSG: {err}"
+        raise NotInstalledError(err_msg)
+    
 def save_github_info(change=False):
     github_info = register.load('github')
     if github_info is None or change:

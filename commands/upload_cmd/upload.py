@@ -10,8 +10,9 @@ from mypy_modules.cli import Command, Flag, Option
 from controllers import db_controller as dbc
 from configs.settings import BASE_DIR
 from ..reused_code import (
-    MongoNotInstalledError, download_repo, check_input_time, check_mongo_installed, remove_repo, 
-    GITHUB_URL, get_github_info, save_github_info, SECURE_DIR, TASKS_DIR
+    NotInstalledError, check_git_installed, download_repo, check_input_time, 
+    check_mongo_installed, remove_repo, GITHUB_URL, get_github_info, save_github_info,
+    SECURE_DIR, TASKS_DIR
 )
 from mypy_modules.process import process
 from mypy_modules.register import register
@@ -66,7 +67,8 @@ upload_logger = logging.getLogger(__name__)
 def upload(args:list=[], options:dict={}, flags:list=[], nested_cmds:dict={}):
     try:
         check_mongo_installed()
-    except MongoNotInstalledError as err:
+        check_git_installed()
+    except NotInstalledError as err:
         upload_logger.error(err)
         return
     # Procesamos las Opciones
