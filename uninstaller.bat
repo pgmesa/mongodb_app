@@ -9,35 +9,24 @@ echo Eliminando entorno virtual...
 del /f/q/s appvenv > nul
 rmdir /q/s appvenv > nul
 
-echo Eliminando global batch file...
-:: BatchGotAdmin
-:-------------------------------------
-REM  --> Check for permissions
-    IF "%PROCESSOR_ARCHITECTURE%" EQU "amd64" (
->nul 2>&1 "%SYSTEMROOT%\SysWOW64\cacls.exe" "%SYSTEMROOT%\SysWOW64\config\system"
-) ELSE (
->nul 2>&1 "%SYSTEMROOT%\system32\cacls.exe" "%SYSTEMROOT%\system32\config\system"
+echo Eliminando global batch file 'mongoapp.bat'...
+call .global.bat --uninstall
+@REM Puesto que despues de dr privilegios, se vuelve a ejecutar .global.bat, este archivo y .global se ejecutan
+@REM a la vez, por lo que si se ejecuta esto antes que el otro saldra una info erronea, por eso el timeout que solo
+@REM se puede romper con control-c
+timeout /t 1 /nobreak > nul
+@REM Poner parentesis en echo hace que el script llegue a dar error. Toma los parentesis como si fueran del script
+@REM y no parentesis como string (evitarlo)
+if exist "C:\Windows\System32\mongoapp.bat" (
+    echo ERROR: Fallo al desinstalar globalmente la aplicacion -- archivo 'mongoapp.bat' --
+    goto failure
+) else (
+    echo SUCCESS: Aplicacion desinstalada globalmente con exito
+    goto success
 )
 
-REM --> If error flag set, we do not have admin.
-if '%errorlevel%' NEQ '0' (
-    echo Requesting administrative privileges...
-    goto UACPrompt
-) else ( goto gotAdmin )
+:success
+    exit /B 0
 
-:UACPrompt
-    echo Set UAC = CreateObject^("Shell.Application"^) > "%temp%\getadmin.vbs"
-    set params= %*
-    echo UAC.ShellExecute "cmd.exe", "/c ""%~s0"" %params:"=""%", "", "runas", 1 >> "%temp%\getadmin.vbs"
-
-    "%temp%\getadmin.vbs"
-    del "%temp%\getadmin.vbs"
-    exit /B
-
-:gotAdmin
-    pushd "%CD%"
-    CD /D "%~dp0"
-:--------------------------------------
-@REM     <BATCH SCRIPT HERE>
-
-del "C:\Windows\System32\mongoapp.bat" > nul
+:failure
+    exit /B 1
