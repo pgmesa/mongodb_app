@@ -19,11 +19,11 @@ def start(args:list=[], options:dict={}, flags:list=[], nested_cmds:dict={}):
     start_logger.info(" Iniciando servidor...")
     if not os.path.exists('db.sqlite3'):
         start_logger.info(" Aplicando migraciones...")
-        process.run('py manage.py migrate', shell=True)
+        process.run('python manage.py migrate', shell=True)
     cmd = f" cd {BASE_DIR/'appvenv/Scripts'}"
     cmd += " & activate"
     cmd += f"& cd {BASE_DIR}"
-    cmd += " & py manage.py runserver"
+    cmd += " & python manage.py runserver"
     cmd += " & exit"
     final_cmd = f'start cmd /k "{cmd}"'
     process.Popen(final_cmd, shell=True)
