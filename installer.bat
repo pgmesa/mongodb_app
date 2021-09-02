@@ -39,7 +39,7 @@ echo set calling_dir=%%cd%% >> %batch_file%
 echo cd "%__CD__%appvenv\Scripts" >> %batch_file%
 echo call activate >> %batch_file%
 echo cd "%__CD__%" >> %batch_file% 
-echo call python main.py %%* >> %batch_file%
+echo python main.py %%* >> %batch_file%
 echo call deactivate >> %batch_file%
 echo cd %%calling_dir%% >> %batch_file%
 
