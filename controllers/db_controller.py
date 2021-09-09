@@ -97,7 +97,7 @@ def update_model(db_name:str, collection_name:str, new_model:dict, override_type
                 for doc in docs:
                     type_func = _get_type(new_type)
                     value = doc[new_name]
-                    if value != "":
+                    if value != "" and value != "-":
                         try:
                             parsed = type_func(value)
                         except Exception as err:

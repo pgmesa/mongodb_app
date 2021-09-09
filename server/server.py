@@ -53,7 +53,7 @@ def _parse_doc_attrs(model:dict, doc:dict, filter_=False) -> dict:
             value = doc[name]
         except KeyError:
             continue
-        if value == "": 
+        if value == "" or value == "-": 
             if not filter_:
                 parsed_doc[name] = "-"
             continue
@@ -699,12 +699,23 @@ def display_documents(request:HttpRequest, db:str, collection:str , extra_vars:d
                 stats_form = {}
                 stats[f"{db}.{collection}"] = stats_form
                 register.update('stats', stats)
+            else:
+                model = dbc.get_model(db, collection)
+                # Comprobamos que no se han cambiado lso tipos de datos
+                for attr_dict in model.values():
+                    if attr_dict["name"]+"_stat" in stats_form:
+                        tp = attr_dict["type"]
+                        if tp != 'int' and tp != 'float':
+                            stats_form.pop(attr_dict["name"]+"_stat")
+                stats[f"{db}.{collection}"] = stats_form
+                register.update('stats', stats)
         else:
             stats_form = {}
             register.add('stats', {f"{db}.{collection}": stats_form})
     context_dict["stats"] = stats_form
     # Calculamos las estadisticas
     if bool(stats_form):
+        print(stats_form)
         calculated_stats = {}
         for field, operator in stats_form.items():
             if operator == '-': continue
