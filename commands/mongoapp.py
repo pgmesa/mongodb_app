@@ -14,7 +14,7 @@ from .repo_cmd.repo import get_repo_cmd, repo
 from .clear_cmd.clear import get_clear_cmd, clear
 from configs.settings import BASE_DIR
 from mypy_modules.process import process
-from mypy_modules.register import register
+from mypy_modules.register import register as config_reg
 
 def get_mongoapp_cmd() -> Command:
     msg = """
@@ -136,12 +136,12 @@ def mongoapp(args:list=[], options:dict={}, flags:list=[], nested_cmds:dict={}):
         return
     elif "--enable-autocomplete" in options:
         with suppress(Exception):
-            register.add('autocomplete', True)
+            config_reg.add('autocomplete', True)
         mongoapp_logger.info(" Autocompletado en formularios activado")
         return
     elif "--disable-autocomplete" in options:
         with suppress(Exception):
-            register.remove('autocomplete')
+            config_reg.remove('autocomplete')
         mongoapp_logger.info(" Autocompletado en formularios desactivado")
         return
     elif "--uninstall-info" in options:

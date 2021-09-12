@@ -25,17 +25,20 @@ urlpatterns = [
     # dbs
     path('', home, name="home"),
     path('add/', add_db),
+    path('duplicate/<db>', duplicate_db),
     path('update/<db>', update_db),
     path('delete/<db>', delete_db),
     # collections
     path('display/<db>', display_collections),
     path('add/<db>', add_collection),
     path('doc_model/<db>/<collection>', create_doc_model),
+    path('duplicate/<db>/<collection>', duplicate_collection),
     path('update/<db>/<collection>', update_collection),
     path('delete/<db>/<collection>', delete_collection),
     # documents
     path('display/<db>/<collection>', display_documents),
     path('add/<db>/<collection>', add_document),
+    path('duplicate/<db>/<collection>/<doc_id>', duplicate_document),
     path('update/<db>/<collection>/<doc_id>', update_document),
     path('delete/<db>/<collection>/<doc_id>', delete_document),
     path('filter/<db>/<collection>', filter_documents),

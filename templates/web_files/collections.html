@@ -67,6 +67,14 @@
             </td>
           {% endif %}
           <td style="padding-right:10px;">
+            <form action="/duplicate/{{db}}/{{collection}}" method="GET">
+              <button type="submit" class="img_button">
+                <img src="{% static 'icons/duplicate.ico' %}" 
+                    alt="duplicate" width="35px" height="35px">
+              </button>
+            </form>
+          </td>
+          <td style="padding-right:10px;">
             <form action="/update/{{db}}/{{collection}}" method="GET">
               <button type="submit" class="img_button">
                 <img src="{% static 'icons/edit.ico' %}" 

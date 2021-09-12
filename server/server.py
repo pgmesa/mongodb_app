@@ -144,7 +144,7 @@ config_keys = [
     "extra_vars", "view_params", "tasks", "github", "hide_dbs", "autocomplete"
 ]
 
-def _delete_data(name:str, copy_to_name:str=None):
+def _modify_data(name:str, copy_to_name:str=None, delete:bool=False):
     reg = register.load()
     new_reg = copy.deepcopy(reg)
     if reg is not None:
@@ -155,7 +155,8 @@ def _delete_data(name:str, copy_to_name:str=None):
                 if (type_values is list or type_values is dict) and name in values:
                     if type_values is list:
                         index = values.index(name)
-                        values.pop(index)
+                        if delete:
+                            values.pop(index)
                         if copy_to_name is not None:
                             values.insert(index, copy_to_name)
                         new_reg[key] = values
@@ -164,8 +165,11 @@ def _delete_data(name:str, copy_to_name:str=None):
                         for val_key, val in values.items():
                             if val_key != name:
                                 new_values[val_key] = val
-                            elif copy_to_name is not None:
-                                new_values[copy_to_name] = val
+                            else:
+                                if not delete:
+                                    new_values[val_key] = val
+                                if copy_to_name is not None:
+                                    new_values[copy_to_name] = val
                         new_reg[key] = new_values
     register.override(new_reg)
     
@@ -276,9 +280,33 @@ def add_db(request:HttpRequest) -> HttpResponse:
     return render(request, "add.html", context_dict)
 
 @_view_inspector
+def duplicate_db(request:HttpRequest, db:str) -> HttpResponse:
+    i = 1; cp_name = db + f"({i})"
+    db_names = dbc.list_dbs()
+    while cp_name in db_names:
+        i += 1
+        cp_name = db + f"({i})"
+    collections = dbc.list_collections(db, only_app_coll=True)
+    for collection in collections:
+        docs = dbc.get_documents(db, collection, with_app_format=False)
+        model = None
+        for doc in docs:
+            if doc["_id"] == "model":
+                model = doc
+                docs.remove(doc)
+                break
+        dbc.add_collection(cp_name, collection, model)
+        for doc in docs:
+            dbc.add_document(cp_name, collection, doc)
+        _modify_data(f'{db}.{collection}', copy_to_name=f'{cp_name}.{collection}')
+    _modify_data(db, copy_to_name=cp_name)
+    return HttpResponseRedirect('/')
+
+@_view_inspector
 def update_db(request:HttpRequest, db:str) -> HttpResponse:
     context_dict = {"db": db}
     form_dict = request.POST.dict()
+    print(form_dict)
     if bool(form_dict):
         new_name = form_dict["name"]
         ex_dbs = dbc.list_dbs()
@@ -296,10 +324,10 @@ def update_db(request:HttpRequest, db:str) -> HttpResponse:
         else:
             if new_name != db:
                 # Actualizamos del registro la info asociada a la db y sus colecciones
-                _delete_data(db, copy_to_name=new_name)
+                _modify_data(db, copy_to_name=new_name, delete=True)
                 collections = dbc.list_collections(db)
                 for colec in collections:
-                    _delete_data(f'{db}.{colec}', copy_to_name=f'{new_name}.{colec}')
+                    _modify_data(f'{db}.{colec}', copy_to_name=f'{new_name}.{colec}', delete=True)
                 dbc.rename_db(db, new_name)
             msg = (f"Base de Datos '{db}' actualizada con exito " + 
                     f"-> '{new_name}'")
@@ -315,10 +343,10 @@ def delete_db(request:HttpRequest, db:str) -> HttpResponse:
     if bool(conf_dict): 
         if "yes" in conf_dict:
             # Eliminamos del registro la info asociada a la db y sus colecciones
-            _delete_data(db)
+            _modify_data(db, delete=True)
             collections = dbc.list_collections(db)
             for colec in collections:
-                _delete_data(f'{db}.{colec}')
+                _modify_data(f'{db}.{colec}', delete=True)
             dbc.drop_db(db)
             msg = f"Base de Datos '{db}' eliminada con exito"
             context_dict["msg"] = msg
@@ -583,6 +611,27 @@ def create_doc_model(request:HttpRequest, db:str, collection:str) -> HttpRespons
     return response
 
 @_view_inspector
+def duplicate_collection(request:HttpRequest, db:str, collection:str) -> HttpResponse:
+    collections = dbc.list_collections(db, only_app_coll=True)
+    i = 1; cp_name = collection + f"({i})"
+    while cp_name in collections:
+        i += 1
+        cp_name = collection + f"({i})"
+    docs = dbc.get_documents(db, collection, with_app_format=False)
+    model = None
+    for doc in docs:
+        if doc["_id"] == "model":
+            model = doc
+            docs.remove(doc)
+            break
+    dbc.add_collection(db, cp_name, model)
+    for doc in docs:
+        dbc.add_document(db, cp_name, doc)
+    _modify_data(f'{db}.{collection}', copy_to_name=f'{db}.{cp_name}')
+    
+    return HttpResponseRedirect(f'/display/{db}')
+
+@_view_inspector
 def update_collection(request:HttpRequest, db:str, collection:str) -> HttpResponse:
     context_dict = {"db": db, "collection": collection}
     form_dict = request.POST.dict()
@@ -600,7 +649,7 @@ def update_collection(request:HttpRequest, db:str, collection:str) -> HttpRespon
         else:
             if new_name != collection:
                 # Actualizamos del registro la info asociada a la coleccion
-                _delete_data(f'{db}.{collection}', copy_to_name=f'{db}.{new_name}')
+                _modify_data(f'{db}.{collection}', copy_to_name=f'{db}.{new_name}', delete=True)
                 dbc.rename_collection(db, collection, new_name)
             msg = (f"Coleccion '{collection}' actualizada con exito " + 
                     f"-> '{new_name}'")
@@ -617,7 +666,7 @@ def delete_collection(request:HttpRequest, db:str, collection:str) -> HttpRespon
     if bool(conf_dict): 
         if "yes" in conf_dict:
             # Eliminamos del registro la info asociada a la coleccion
-            _delete_data(f"{db}.{collection}")
+            _modify_data(f"{db}.{collection}", delete=True)
             dbc.remove_collecttion(db, collection)
             msg = f"Coleccion '{collection}' eliminada con exito"
             context_dict["msg"] = msg
@@ -818,6 +867,23 @@ def add_document(request:HttpRequest, db:str, collection:str) -> HttpResponse:
     _set_extra_vars({"textareas": context_dict["textareas"]}, 'add_document')
     context_dict["add_doc"] = True
     return render(request, 'add.html', context_dict)
+
+@_view_inspector
+def duplicate_document(request:HttpRequest, db:str, collection:str, doc_id:str) -> HttpResponse:
+    docs = dbc.get_documents(db, collection, with_app_format=False)
+    print(docs)
+    for doc in docs:
+        if doc["_id"] == "model": continue
+        dbc.delete_document(db, collection, doc["_id"])
+    for doc in docs:
+        if doc["_id"] == "model": continue
+        elif doc["_id"] == doc_id: 
+            dbc.add_document(db, collection, doc)
+            doc.pop("_id")
+        dbc.add_document(db, collection, doc)
+    
+    return HttpResponseRedirect(f'/display/{db}/{collection}')
+
 
 @_view_inspector
 def update_document(request:HttpRequest, db:str, collection:str, doc_id:str) -> HttpResponse:

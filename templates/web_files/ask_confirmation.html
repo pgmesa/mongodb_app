@@ -1,6 +1,15 @@
 
 {% extends 'base.html' %}
 
+{% block td_nav %}
+  {% if delete_collection %}
+    <td style="padding: 0 10px;"><a href="/display/{{db}}" class="nav">Collections</a></td>
+  {% elif delete_doc or delete_docs%}
+    <td style="padding: 0 10px;"><a href="/display/{{db}}" class="nav">Collections</a></td>
+    <td style="padding: 0 10px;"><a href="/display/{{db}}/{{collection}}" class="nav">Documents</a></td>
+  {% endif %}
+{% endblock %}
+
 {% block content %}
   <form action="" method="POST">
     {% csrf_token %}

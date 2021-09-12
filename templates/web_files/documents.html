@@ -172,6 +172,14 @@
           {% for attr_dict in model.values %}
             <td style="padding: 10px"><div style="white-space: pre-wrap;">{{doc|lookup:attr_dict.name}}</div></td>
           {% endfor %}
+          <td style="padding-right:10px;">
+            <form action="/duplicate/{{db}}/{{collection}}/{{doc.id}}" method="GET">
+              <button type="submit" class="img_button">
+                <img src="{% static 'icons/duplicate.ico' %}" 
+                    alt="duplicate" width="35px" height="35px">
+              </button>
+            </form>
+          </td>
           <td style="padding: 0 5px;">
             <form action="/update/{{db}}/{{collection}}/{{doc.id}}" method="GET">
               <button type="submit" class="img_button">
