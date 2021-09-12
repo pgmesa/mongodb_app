@@ -140,7 +140,9 @@ def _order_lists(list_to_order:list, order_list:list) -> list:
         
     return ordered_list
 
-config_keys = ["extra_vars", "view_params", "tasks", "github", "hide_dbs"]
+config_keys = [
+    "extra_vars", "view_params", "tasks", "github", "hide_dbs", "autocomplete"
+]
 
 def _delete_data(name:str, copy_to_name:str=None):
     reg = register.load()
@@ -269,7 +271,7 @@ def add_db(request:HttpRequest) -> HttpResponse:
             context_dict["err_msg"] = err_msg
         else:
             return HttpResponseRedirect(f'/add/{new_db}')
-                
+
     context_dict["add_db"] = True
     return render(request, "add.html", context_dict)
 

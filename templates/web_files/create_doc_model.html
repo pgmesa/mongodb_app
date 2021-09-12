@@ -1,7 +1,7 @@
 
 {% extends 'base.html' %}
 
-{% load static %}
+{% load static %} {% load custom_filters %}
 
 {% block td_nav %}
   <td style="padding: 0 10px;"><a href="/display/{{db}}">Collections</a></td>
@@ -18,7 +18,7 @@
 
 {% block content %}
   <table style="margin: auto;">     
-    <form action="/doc_model/{{db}}/{{collection}}" method="POST">
+    <form action="/doc_model/{{db}}/{{collection}}" method="POST" autocomplete="{{'get'|autocomplete}}">
       {% csrf_token %}
       {% for attr, attr_dict in model.items %}
         <tr>

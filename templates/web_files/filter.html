@@ -17,7 +17,7 @@
 {% endblock %}
 
 {% block content %}
-  <form action="/filter/{{db}}/{{collection}}" method="POST">
+  <form action="/filter/{{db}}/{{collection}}" method="POST" autocomplete="{{'get'|autocomplete}}">
     {% csrf_token %}
     <table style="margin: auto;">
       {% for attr, attr_dict in model.items %}

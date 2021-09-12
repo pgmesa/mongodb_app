@@ -28,7 +28,7 @@
 
 {% block content %}
   {% if update_db %}
-    <form action="/update/{{db}}" method="POST">
+    <form action="/update/{{db}}" method="POST" autocomplete="{{'get'|autocomplete}}">
       {% csrf_token %}
       <table style="margin: auto;">
         <tr>
@@ -43,7 +43,7 @@
       </table>
     </form>
   {% elif update_collection %}
-    <form action="/update/{{db}}/{{collection}}" method="POST">
+    <form action="/update/{{db}}/{{collection}}" method="POST" autocomplete="{{'get'|autocomplete}}">
       {% csrf_token %}
       <table style="margin: auto;">
         <tr>
@@ -58,7 +58,7 @@
       </table>
     </form>
   {% elif update_doc %}
-    <form action="/update/{{db}}/{{collection}}/{{doc_id}}" method="POST">
+    <form action="/update/{{db}}/{{collection}}/{{doc_id}}" method="POST" autocomplete="{{'get'|autocomplete}}">
       {% csrf_token %}
       <table style="margin: auto;">
         {% for attr_dict in model.values %}

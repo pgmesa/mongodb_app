@@ -28,7 +28,7 @@
 
 {% block content %}
   {% if add_db %}
-    <form action="/add/" method="POST">
+    <form action="/add/" method="POST" autocomplete="{{'get'|autocomplete}}">
       {% csrf_token %}
       <table style="margin: auto;">
         <tr>
@@ -43,7 +43,7 @@
       </table>
     </form>
   {% elif add_collection %}
-    <form action="/add/{{db}}" method="POST">
+    <form action="/add/{{db}}" method="POST" autocomplete="{{'get'|autocomplete}}">
       {% csrf_token %}
       <table style="margin: auto;">
         <tr>
@@ -58,7 +58,7 @@
       </table>
     </form>
   {% elif add_doc %}
-    <form action="/add/{{db}}/{{collection}}" method="POST">
+    <form action="/add/{{db}}/{{collection}}" method="POST" autocomplete="{{'get'|autocomplete}}">
       {% csrf_token %}
       <table style="margin: auto;">
         {% for attr, attr_dict in model.items %}

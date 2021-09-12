@@ -1,4 +1,6 @@
 
+from contextlib import suppress
+import logging
 from commands.upload_cmd.upload import upload
 from mypy_modules.cli import Command, Flag, Option
 # imports de los comandos asociados
@@ -12,6 +14,7 @@ from .repo_cmd.repo import get_repo_cmd, repo
 from .clear_cmd.clear import get_clear_cmd, clear
 from configs.settings import BASE_DIR
 from mypy_modules.process import process
+from mypy_modules.register import register
 
 def get_mongoapp_cmd() -> Command:
     msg = """
@@ -56,6 +59,12 @@ def get_mongoapp_cmd() -> Command:
     # --------------------------------
     uninstall_info_opt = def_uninstall_info_opt()
     mongoapp.add_option(uninstall_info_opt)
+    # --------------------------------
+    enable_opt = def_enable_opt()
+    mongoapp.add_option(enable_opt)
+    # --------------------------------
+    disable_opt = def_disable_opt()
+    mongoapp.add_option(disable_opt)
 
     return mongoapp
 
@@ -94,6 +103,23 @@ def def_uninstall_info_opt() -> Option:
     ) 
     
     return uninstall_info
+
+def def_enable_opt() -> Option:
+    enable = Option(
+        '--enable-autocomplete', description='enables autocomplete in html forms'
+    )
+    
+    return enable
+
+def def_disable_opt() -> Option:
+    disable = Option(
+        '--disable-autocomplete', description='disables autocomplete in html forms'
+    )
+    
+    return disable
+
+
+mongoapp_logger = logging.getLogger(__name__)
 # --------------------------------------------------------------------
 # -------------------------------------------------------------------- 
 def mongoapp(args:list=[], options:dict={}, flags:list=[], nested_cmds:dict={}):
@@ -107,6 +133,16 @@ def mongoapp(args:list=[], options:dict={}, flags:list=[], nested_cmds:dict={}):
     elif "--cmd" in options:
         location = f'{BASE_DIR}'
         process.Popen(f'start cmd /k "cd {location} & deactivate"', shell=True)
+        return
+    elif "--enable-autocomplete" in options:
+        with suppress(Exception):
+            register.add('autocomplete', True)
+        mongoapp_logger.info(" Autocompletado en formularios activado")
+        return
+    elif "--disable-autocomplete" in options:
+        with suppress(Exception):
+            register.remove('autocomplete')
+        mongoapp_logger.info(" Autocompletado en formularios desactivado")
         return
     elif "--uninstall-info" in options:
         msg = """
