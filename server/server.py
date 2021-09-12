@@ -273,6 +273,9 @@ def add_db(request:HttpRequest) -> HttpResponse:
         elif " " in new_db:
             err_msg = f"El nombre no puede contener espacios en blanco"
             context_dict["err_msg"] = err_msg
+        elif "/" in new_db or "\\" in new_db:
+            err_msg = f"El nombre no puede contener '/' ni '\\'"
+            context_dict["err_msg"] = err_msg
         else:
             return HttpResponseRedirect(f'/add/{new_db}')
 
@@ -310,7 +313,6 @@ def update_db(request:HttpRequest, db:str) -> HttpResponse:
     if bool(form_dict):
         new_name = form_dict["name"]
         ex_dbs = dbc.list_dbs()
-        new_name = form_dict['name']
         if new_name == "":
             err_msg = "Campo nombre obligatorio"
             context_dict["err_msg"] = err_msg
@@ -320,6 +322,9 @@ def update_db(request:HttpRequest, db:str) -> HttpResponse:
             context_dict["err_msg"] = err_msg
         elif " " in new_name:
             err_msg = f"El nombre no puede contener espacios en blanco"
+            context_dict["err_msg"] = err_msg
+        elif "/" in new_name or "\\" in new_name:
+            err_msg = "El nombre no puede contener '/' ni '\\'"
             context_dict["err_msg"] = err_msg
         else:
             if new_name != db:
@@ -458,6 +463,9 @@ def add_collection(request:HttpRequest, db:str) -> HttpResponse:
             context_dict["err_msg"] = err_msg
         elif new_collection in collections:
             err_msg = f"Este nombre ya esta usado"
+            context_dict["err_msg"] = err_msg
+        elif "/" in new_collection or "\\" in new_collection:
+            err_msg = "El nombre no puede contener '/' ni '\\'"
             context_dict["err_msg"] = err_msg
         else:
             return HttpResponseRedirect(f'/doc_model/{db}/{new_collection}')
@@ -645,6 +653,9 @@ def update_collection(request:HttpRequest, db:str, collection:str) -> HttpRespon
         elif new_name in ex_collections and new_name != collection:
             err_msg = ("Ya existe una coleccion en la base de datos " +
                     f"'{db}' con este nombre")
+            context_dict["err_msg"] = err_msg
+        elif "/" in new_name or "\\" in new_name:
+            err_msg = "El nombre no puede contener '/' ni '\\'"
             context_dict["err_msg"] = err_msg
         else:
             if new_name != collection:
