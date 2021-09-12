@@ -69,13 +69,23 @@
                 <textarea name="{{attr_dict.name}}" style="font-size: 20px;" cols="27" rows="5">{{values|lookup:attr_dict.name}}</textarea>
               {% else %}
                 {% if not values|lookup:attr_dict.name == '-' %}
-                  <input type="text" name="{{attr_dict.name}}" value="{{values|lookup:attr_dict.name}}">
+                  <input {% if attr_dict.name in show_pwds %}type="text"{% else %}type="{{attr_dict.type|get_type}}"{% endif %} 
+                  name="{{attr_dict.name}}" value="{{values|lookup:attr_dict.name}}">
                 {% else %}
-                  <input type="text" name="{{attr_dict.name}}" value="">
+                  <input {% if attr_dict.name in show_pwds %}type="text"{% else %}type="{{attr_dict.type|get_type}}"{% endif %}
+                   name="{{attr_dict.name}}" value="">
                 {% endif %}
               {% endif %}
             </td>
-            {% if attr_dict.type == 'str' %}
+            {% if attr_dict.type == 'password' %} 
+                <td>
+                  <button type="submit" class="img_button" name="show" value="{{attr_dict.name}}">
+                    <img src="{% static 'icons/eye.ico' %}"
+                        alt="show" width="35px" height="35px">
+                  </button>
+                </td>
+              {% endif %}
+            {% if attr_dict.type == 'str' %} 
               <td>
                 <button type="submit" class="img_button" name="textarea" value="{{attr_dict.name}}">
                   <img src="{% static 'icons/textarea.ico' %}"

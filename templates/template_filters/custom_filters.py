@@ -26,3 +26,9 @@ def autocomplete(action:str):
     if r is not None and "autocomplete" in r:
         return "on"
     return "off"
+
+@register.filter
+def get_type(tp:str):
+    if tp == 'password':
+        return 'password'
+    return 'text'

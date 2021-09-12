@@ -60,7 +60,7 @@
               <input type="text" name="{{attr_dict.name}}" value="{{values|lookup:attr_dict.name}}">
             {% endif %}
           </td>
-          {% if attr_dict.type == 'str' %} 
+          {% if attr_dict.type == 'str' or attr_dict.type == 'password' %} 
             <td>
               <button type="submit" class="img_button" name="textarea" value="{{attr_dict.name}}">
                 <img src="{% static 'icons/textarea.ico' %}"

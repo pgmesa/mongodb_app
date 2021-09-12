@@ -837,7 +837,7 @@ def display_documents(request:HttpRequest, db:str, collection:str , extra_vars:d
 @_view_inspector
 def add_document(request:HttpRequest, db:str, collection:str) -> HttpResponse:
     context_dict = {"db": db, "collection": collection}
-    context_dict["textareas"] = []
+    context_dict["textareas"] = []; context_dict["show_pwds"] = []
     context_dict["values"] = {}
     extra_vars = _get_extra_vars('add_document')
     for var, value in extra_vars.items():
@@ -845,6 +845,7 @@ def add_document(request:HttpRequest, db:str, collection:str) -> HttpResponse:
     view_params = register.load('view_params')
     if view_params["redirected"]:
         context_dict["textareas"] = []
+        context_dict["show_pwds"] = []
         
     form_dict = _clean_form(request.POST)
     if bool(form_dict):
@@ -867,12 +868,24 @@ def add_document(request:HttpRequest, db:str, collection:str) -> HttpResponse:
                 context_dict["textareas"].remove(attr)
             else:
                 context_dict["textareas"].append(attr)
+        elif "show" in form_dict:
+            attr = form_dict.pop("show")
+            if attr in context_dict["show_pwds"]:
+                context_dict["show_pwds"].remove(attr)
+            else:
+                context_dict["show_pwds"].append(attr)
+                
         context_dict["values"] = form_dict
         
     model = dbc.get_model(db, collection)
     context_dict["model"] = model
         
-    _set_extra_vars({"textareas": context_dict["textareas"]}, 'add_document')
+    _set_extra_vars(
+        {"textareas": 
+            context_dict["textareas"],
+         "show_pwds": 
+            context_dict["show_pwds"]},
+        'add_document')
     context_dict["add_doc"] = True
     return render(request, 'add.html', context_dict)
 
@@ -895,7 +908,7 @@ def duplicate_document(request:HttpRequest, db:str, collection:str, doc_id:str) 
 @_view_inspector
 def update_document(request:HttpRequest, db:str, collection:str, doc_id:str) -> HttpResponse:
     context_dict = {"db": db, "collection": collection}
-    context_dict["textareas"] = []
+    context_dict["textareas"] = []; context_dict["show_pwds"] = []
     context_dict["values"] = {}
     extra_vars = _get_extra_vars('update_document')
     for var, value in extra_vars.items():
@@ -922,6 +935,7 @@ def update_document(request:HttpRequest, db:str, collection:str, doc_id:str) -> 
                 if len(string) > 21 or cond2:
                     initial_textareas.append(name)
         context_dict["textareas"] = initial_textareas
+        context_dict["show_pwds"] = []
     
     form_dict = _clean_form(request.POST)
     if bool(form_dict):
@@ -944,9 +958,20 @@ def update_document(request:HttpRequest, db:str, collection:str, doc_id:str) -> 
                 context_dict["textareas"].remove(attr)
             else:
                 context_dict["textareas"].append(attr)
+        elif "show" in form_dict:
+            attr = form_dict.pop("show")
+            if attr in context_dict["show_pwds"]:
+                context_dict["show_pwds"].remove(attr)
+            else:
+                context_dict["show_pwds"].append(attr)
+                
         context_dict["values"] = form_dict
     
-    _set_extra_vars({"textareas": context_dict["textareas"]}, 'update_document')
+    _set_extra_vars(
+        {"textareas": 
+            context_dict["textareas"],
+         "show_pwds": 
+            context_dict["show_pwds"]}, 'update_document')
     context_dict["update_doc"] = True
     return render(request, "update.html", context_dict)
 

@@ -47,6 +47,10 @@ input[type="text"]{
     font-size: 25px;
 }
 
+input[type="password"]{
+    font-size: 25px;
+}
+
 /* Tiene en cuanta el numero de pixeles que tiene en horizontal (En moviles con alta resolución tienen muchos pixeles horizontales aunque la 
 pantalla sea pequeña*/ 
 /*1em = 16 px*/
