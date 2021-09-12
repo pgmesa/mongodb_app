@@ -612,7 +612,7 @@ def create_doc_model(request:HttpRequest, db:str, collection:str) -> HttpRespons
 
 @_view_inspector
 def duplicate_collection(request:HttpRequest, db:str, collection:str) -> HttpResponse:
-    collections = dbc.list_collections(db, only_app_coll=True)
+    collections = dbc.list_collections(db)
     i = 1; cp_name = collection + f"({i})"
     while cp_name in collections:
         i += 1
