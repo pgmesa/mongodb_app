@@ -87,7 +87,6 @@ def _parse_doc_attrs(model:dict, doc:dict, filter_=False) -> dict:
 
 def _view_inspector(func):
     def view_inspector(*args, **kwargs) -> HttpResponse:
-        # print("register -->", register.load())
         view_params = register.load('view_params')
         if view_params is None:
             view_params = {"last_view": None, "redirected": False}
@@ -309,7 +308,6 @@ def duplicate_db(request:HttpRequest, db:str) -> HttpResponse:
 def update_db(request:HttpRequest, db:str) -> HttpResponse:
     context_dict = {"db": db}
     form_dict = request.POST.dict()
-    print(form_dict)
     if bool(form_dict):
         new_name = form_dict["name"]
         ex_dbs = dbc.list_dbs()
@@ -777,7 +775,6 @@ def display_documents(request:HttpRequest, db:str, collection:str , extra_vars:d
     context_dict["stats"] = stats_form
     # Calculamos las estadisticas
     if bool(stats_form):
-        print(stats_form)
         calculated_stats = {}
         for field, operator in stats_form.items():
             if operator == '-': continue
@@ -882,7 +879,6 @@ def add_document(request:HttpRequest, db:str, collection:str) -> HttpResponse:
 @_view_inspector
 def duplicate_document(request:HttpRequest, db:str, collection:str, doc_id:str) -> HttpResponse:
     docs = dbc.get_documents(db, collection, with_app_format=False)
-    print(docs)
     for doc in docs:
         if doc["_id"] == "model": continue
         dbc.delete_document(db, collection, doc["_id"])
