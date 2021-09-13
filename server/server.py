@@ -57,14 +57,15 @@ def _parse_doc_attrs(model:dict, doc:dict, filter_=False) -> dict:
             if not filter_:
                 parsed_doc[name] = "-"
             continue
-        if str_type == 'str':
+        if str_type == 'str' or str_type == 'password':
             type_func = str
         elif str_type == 'int':
             type_func = int
         elif str_type == 'float':
             type_func = float
         else:
-            err_msg = f"EL tipo '{str_type}' no es válido, debe ser (str, int o float)"
+            err_msg = f"EL tipo '{str_type}' no es válido, debe ser "
+            err_msg += "(str, int, float o password)"
             raise Exception(err_msg)
         try:
             parsed = type_func(value)
@@ -113,10 +114,10 @@ def _view_inspector(func):
             dic = {"err_msg": err_msg, "conserv_format": True, "failed_path": args[0].path_info}
             _set_extra_vars(dic, 'error')
             return HttpResponseRedirect('/error/')
-        except Exception as err:
-            err_msg = f"ERROR: {err}"
-            _set_extra_vars({"err_msg": err_msg, "failed_path": args[0].path_info}, 'error')
-            return HttpResponseRedirect('/error/')
+        # except Exception as err:
+        #     err_msg = f"ERROR: {err}"
+        #     _set_extra_vars({"err_msg": err_msg, "failed_path": args[0].path_info}, 'error')
+        #     return HttpResponseRedirect('/error/')
     return view_inspector
 
 def _order_lists(list_to_order:list, order_list:list) -> list:
@@ -480,13 +481,14 @@ def create_doc_model(request:HttpRequest, db:str, collection:str) -> HttpRespons
     ex_model = dbc.get_model(db, collection)
     if ex_model is not None:
         context_dict["model"] = ex_model
+        context_dict["updating_model"] = True
         if "num_attrs" not in context_dict:
             context_dict["num_attrs"] = len(ex_model)
     else:
         if "num_attrs" not in context_dict:
             context_dict["num_attrs"] = 1
 
-    def process_model_from_form(form:dict) -> dict:
+    def process_model_from_form(form_dict:dict) -> dict:
         attrs = []; types = []; model = {}
         for inpt in form_dict:
             if "type" in inpt:
@@ -799,7 +801,8 @@ def display_documents(request:HttpRequest, db:str, collection:str , extra_vars:d
     if bool(model_doc):
         # Miramos si hay algun atributo que sea un numero 
         for attr_dict in model_doc.values():
-            if attr_dict["type"] != 'str':
+            tp = attr_dict["type"]
+            if tp != 'str' and tp != 'password':
                 context_dict["numbers"] = True
                 break
         else:
@@ -908,7 +911,7 @@ def duplicate_document(request:HttpRequest, db:str, collection:str, doc_id:str) 
 @_view_inspector
 def update_document(request:HttpRequest, db:str, collection:str, doc_id:str) -> HttpResponse:
     context_dict = {"db": db, "collection": collection}
-    context_dict["textareas"] = []; context_dict["show_pwds"] = []
+    context_dict["textareas"] = []; context_dict["show_pwds"] = []; context_dict["locked_pwds"] = {}
     context_dict["values"] = {}
     extra_vars = _get_extra_vars('update_document')
     for var, value in extra_vars.items():
@@ -918,15 +921,18 @@ def update_document(request:HttpRequest, db:str, collection:str, doc_id:str) -> 
     doc = dbc.find_doc_by_id(db, collection, doc_id)
     context_dict["doc_id"] = doc_id
     context_dict["values"] = doc
-    context_dict["model"] = dbc.get_model(db, collection)
+    model = dbc.get_model(db, collection)
+    context_dict["model"] = model
     
-    # Vemos si nos han redirigido a ha sido un submit de textareas
+    # Vemos si nos han redirigido o ha sido un boton de la view (textareas ...)
     if view_params["redirected"]:
-        # Vemos si algun texto supera los 22 caracteres para que se
+        # 1. Vemos si algun texto supera los 22 caracteres para que se
         # presente directamente con textarea y no pierda el formato de
         # saltos de linea etc
+        # 2. Bloqueamos los inputs de contraseñas hasta que se desbloqueen con la clave
+        # para que no se puedan editar
         model = context_dict["model"]
-        initial_textareas = []
+        initial_textareas = []; initial_locked = {}
         for attr_dict in model.values():
             tp = attr_dict["type"]; name = attr_dict["name"]
             if tp == 'str' :
@@ -934,11 +940,15 @@ def update_document(request:HttpRequest, db:str, collection:str, doc_id:str) -> 
                 cond2 = "\n" in string or "\r" in string
                 if len(string) > 21 or cond2:
                     initial_textareas.append(name)
+            elif tp == 'password' and doc[name] != "-":
+                initial_locked[name] = doc[name]
         context_dict["textareas"] = initial_textareas
+        context_dict["locked_pwds"] = initial_locked
         context_dict["show_pwds"] = []
     
     form_dict = _clean_form(request.POST)
     if bool(form_dict):
+        form_dict.update(context_dict["locked_pwds"])
         if "update" in form_dict:
             form_dict.pop("update")
             new_doc = form_dict
@@ -964,14 +974,21 @@ def update_document(request:HttpRequest, db:str, collection:str, doc_id:str) -> 
                 context_dict["show_pwds"].remove(attr)
             else:
                 context_dict["show_pwds"].append(attr)
-                
+        elif "unlock" in form_dict:
+            attr = form_dict.pop("unlock")
+            if attr in context_dict["locked_pwds"]:
+                context_dict["locked_pwds"].pop(attr)
+            form_dict[attr] = doc[attr]
+        
         context_dict["values"] = form_dict
     
     _set_extra_vars(
         {"textareas": 
             context_dict["textareas"],
          "show_pwds": 
-            context_dict["show_pwds"]}, 'update_document')
+            context_dict["show_pwds"],
+         "locked_pwds": 
+             context_dict["locked_pwds"],}, 'update_document')
     context_dict["update_doc"] = True
     return render(request, "update.html", context_dict)
 
@@ -1002,7 +1019,7 @@ def _form_to_mongo_queries(form_dict:dict, model:dict) -> dict:
         name = attr_dict["name"]; tp = attr_dict["type"]
         operator = form_dict[f"{name}_select"]; value:str = form_dict[name]
         if value == "": continue
-        if tp == 'str':
+        if tp == 'str' or tp == 'password':
             case = form_dict[f"{name}_case"]
             if operator == 'equals': 
                 query = {name: value}

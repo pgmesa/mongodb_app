@@ -24,7 +24,7 @@
         <tr>
           <td style="text-align: left;">{{attr_dict.name}} ({{attr_dict.type}})</td>
           <td style="padding: 0px 8px;">
-            {% if attr_dict.type == 'str' %}
+            {% if attr_dict.type == 'str' or attr_dict.type == 'password'  %}
               <select name="{{attr_dict.name}}_select" style="font-size: 23px;"">
                 <option value="contains"{% if attr_dict.name|addstr:"_select"|lookup2:values == 'contains' %}selected{% endif %}>
                   contains

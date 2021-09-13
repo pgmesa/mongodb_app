@@ -122,7 +122,7 @@
             {% csrf_token %}
             {% for attr_dict in model.values %}
               <td>
-                {% if attr_dict.type != 'str' %} 
+                {% if attr_dict.type == 'int' or attr_dict.type == 'float' %} 
                   <select class="select" name="{{attr_dict.name}}_stat">
                     <option value="-" {% if stats and attr_dict.name|addstr:"_stat"|lookup2:stats == '-' %}selected{% endif %}> - </option>
                     <option value="avg" {% if stats and attr_dict.name|addstr:"_stat"|lookup2:stats == 'avg' %}selected{% endif %}>avg</option>
@@ -170,7 +170,25 @@
         <tr>
           <td style="color: red;">{{forloop.counter}}.</td>
           {% for attr_dict in model.values %}
-            <td style="padding: 10px"><div style="white-space: pre-wrap;">{{doc|lookup:attr_dict.name}}</div></td>
+            <td style="padding: 10px;">
+              {% if attr_dict.type == 'password' and doc|lookup:attr_dict.name != '-' %}
+                <table style="width: 100%;">
+                  <td>
+                    <div style="white-space: pre-wrap;">{{doc|lookup:attr_dict.name}}</div>
+                  </td>
+                  <td style="width: 1%; padding-left: 10px;">
+                    <form action="/display/{{db}}/{{collection}}">
+                      <button type="submit" class="img_button" name="unlock" value="{{attr_dict.name}}">
+                        <img src="{% static 'icons/key.ico' %}"
+                            alt="unlock" width="35px" height="35px">
+                      </button>
+                    </form>
+                  </td>
+                </table>
+              {% else %}
+                <div style="white-space: pre-wrap;">{{doc|lookup:attr_dict.name}}</div>
+              {% endif %}
+            </td> 
           {% endfor %}
           <td style="padding-right:10px;">
             <form action="/duplicate/{{db}}/{{collection}}/{{doc.id}}" method="GET">
