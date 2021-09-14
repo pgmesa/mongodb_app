@@ -11,6 +11,7 @@ from django.shortcuts import render
 from controllers import db_controller as dbc
 from mypy_modules.register import register
 from commands.reused_code import NotInstalledError, check_mongo_installed
+from .encryption import *
 
 def _clean_form(form:QueryDict) -> dict:
     cleaned = form.dict()
@@ -480,6 +481,7 @@ def create_doc_model(request:HttpRequest, db:str, collection:str) -> HttpRespons
         context_dict[var] = value
     ex_model = dbc.get_model(db, collection)
     if ex_model is not None:
+        context_dict["old_model"] = ex_model
         context_dict["model"] = ex_model
         context_dict["updating_model"] = True
         if "num_attrs" not in context_dict:
@@ -697,7 +699,8 @@ def delete_collection(request:HttpRequest, db:str, collection:str) -> HttpRespon
 def display_documents(request:HttpRequest, db:str, collection:str , extra_vars:dict={}) -> HttpResponse:
     context_dict = {"db": db, "collection": collection}
     extra_vars = _get_extra_vars("display_documents")
-    
+    print(dbc.get_passwords(db, collection, with_id=True))
+    context_dict["passwords"] = dbc.get_passwords(db, collection, with_id=True)
     for var, val in extra_vars.items():
         context_dict[var] = val
     # Miramos si hay que eliminar todos los docs
@@ -794,7 +797,27 @@ def display_documents(request:HttpRequest, db:str, collection:str , extra_vars:d
                         result = 0
                 elif operator == 'sum': result = sum_
             calculated_stats[field] = result
-        context_dict["calculated_stats"] = calculated_stats          
+        context_dict["calculated_stats"] = calculated_stats 
+    unlock_form = _clean_form(request.POST)
+    if "unlock" in unlock_form:
+        enc_pw = unlock_form.pop('unlock')
+        target_doc = None; target_attr = None
+        for doc in docs:
+            for attr in doc:
+                val = doc[attr]
+                if val == enc_pw:
+                    target_doc = doc
+                    target_attr = attr
+                    break
+            else:
+                continue
+            break
+        if target_doc is not None:
+            index = docs.index(doc)
+            pw_info = dbc.get_password_info(db, collection, enc_pw)
+            target_doc[target_attr] = decrypt(enc_pw, int(pw_info["seed"]), pw_info["key"])
+            docs.pop(index)
+            docs.insert(index, target_doc)
     # Mostramos los documentos segun si hay o no hay modelo establecido
     model_doc = dbc.get_model(db, collection)
     context_dict["model"] = model_doc
@@ -837,6 +860,29 @@ def display_documents(request:HttpRequest, db:str, collection:str , extra_vars:d
 
     return render(request, 'documents.html', context_dict)
 
+def _encrypt(doc:dict, model:dict, db:str, collection:str):
+    for attr_dict in model.values():
+        name = attr_dict["name"]
+        if attr_dict["type"] == "password":
+            value = doc[name]; ex_passwords = dbc.get_passwords(db, collection)
+            if value != "-" and value not in ex_passwords:
+                encrypted = None; decrypted = None; attempts = 1000
+                while (encrypted is None or encrypted in ex_passwords
+                    or decrypted != value):
+                    encrypted, seed, key, mode = encrypt(value)
+                    decrypted = decrypt(encrypted, seed, key, mode=mode)
+                    attempts -= 1
+                    if attempts == 0:
+                        msg = f" No se ha podido encryptar la contraseña '{value}'"
+                        raise EncryptionError(msg)
+                doc[name] = encrypted
+                # seed = sk.hide(key, seed)
+                pw_info = {
+                    "encryption_info":
+                        {"mode": mode, "seed": str(seed), "key": key}
+                }
+                dbc.add_password(db, collection, encrypted, pw_info)
+                
 @_view_inspector
 def add_document(request:HttpRequest, db:str, collection:str) -> HttpResponse:
     context_dict = {"db": db, "collection": collection}
@@ -858,6 +904,9 @@ def add_document(request:HttpRequest, db:str, collection:str) -> HttpResponse:
             model = dbc.get_model(db, collection)
             try:
                 doc = _parse_doc_attrs(model, doc)
+                _encrypt(doc, model, db, collection)
+            except EncryptionError as err:
+                context_dict["err_msg"] = str(err)
             except Exception as err:
                 context_dict["err_msg"] = str(err)
             else:
@@ -879,7 +928,7 @@ def add_document(request:HttpRequest, db:str, collection:str) -> HttpResponse:
                 context_dict["show_pwds"].append(attr)
                 
         context_dict["values"] = form_dict
-        
+    
     model = dbc.get_model(db, collection)
     context_dict["model"] = model
         
@@ -896,13 +945,19 @@ def add_document(request:HttpRequest, db:str, collection:str) -> HttpResponse:
 def duplicate_document(request:HttpRequest, db:str, collection:str, doc_id:str) -> HttpResponse:
     docs = dbc.get_documents(db, collection, with_app_format=False)
     for doc in docs:
-        if doc["_id"] == "model": continue
-        dbc.delete_document(db, collection, doc["_id"])
+        if doc["_id"] == "model" or doc["_id"] == "passwords": continue
+        dbc.delete_document(db, collection, doc["_id"], delete_pwds=False)
     for doc in docs:
-        if doc["_id"] == "model": continue
+        if doc["_id"] == "model" or doc["_id"] == "passwords": continue
         elif doc["_id"] == doc_id: 
             dbc.add_document(db, collection, doc)
             doc.pop("_id")
+            model = dbc.get_model(db, collection)
+            for attr_dict in model.values():
+                name = attr_dict["name"]
+                if attr_dict["type"] == 'password':
+                    doc[name] = "-" 
+                
         dbc.add_document(db, collection, doc)
     
     return HttpResponseRedirect(f'/display/{db}/{collection}')
@@ -955,6 +1010,9 @@ def update_document(request:HttpRequest, db:str, collection:str, doc_id:str) -> 
             try:
                 model = dbc.get_model(db, collection)
                 new_doc = _parse_doc_attrs(model, new_doc)
+                _encrypt(new_doc, model, db, collection)
+            except EncryptionError as err:
+                context_dict["err_msg"] = str(err)
             except Exception as err:
                 context_dict["err_msg"] = str(err)
             else:
@@ -974,11 +1032,22 @@ def update_document(request:HttpRequest, db:str, collection:str, doc_id:str) -> 
                 context_dict["show_pwds"].remove(attr)
             else:
                 context_dict["show_pwds"].append(attr)
-        elif "unlock" in form_dict:
-            attr = form_dict.pop("unlock")
-            if attr in context_dict["locked_pwds"]:
-                context_dict["locked_pwds"].pop(attr)
-            form_dict[attr] = doc[attr]
+        elif "unlock" in form_dict or "lock" in form_dict:
+            if "unlock" in form_dict:
+                attr = form_dict.pop("unlock")
+                if attr in context_dict["locked_pwds"]:
+                    context_dict["locked_pwds"].pop(attr)
+                enc_pw = doc[attr]
+                pw_info = dbc.get_password_info(db, collection, enc_pw)
+                if pw_info is None:
+                    msg = f"La contraseña '{enc_pw}' no se encuentra almacenada en el sistema"
+                    context_dict["err_msg"] = msg
+                else:
+                    form_dict[attr] = decrypt(enc_pw, int(pw_info["seed"]), pw_info["key"])
+            else:
+                attr = form_dict.pop("lock")
+                context_dict["locked_pwds"].update({attr: doc[attr]})
+            
         
         context_dict["values"] = form_dict
     

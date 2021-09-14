@@ -41,7 +41,7 @@
                 <option value="str" {% if attr_dict.type == 'str' %}selected{% endif %}>str</option>
                 <option value="int" {% if attr_dict.type == 'int' %}selected{% endif %}>int</option>
                 <option value="float" {% if attr_dict.type == 'float' %}selected{% endif %}>float</option>
-                {% if not updating_model %}
+                {% if not updating_model or attr not in old_model %}
                   <option value="password" {% if attr_dict.type == 'password' %}selected{% endif %}>password</option>
                 {% endif %}
               </select>

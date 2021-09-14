@@ -68,6 +68,47 @@ def get_model(db_name:str, collection_name:str, with_id=False) -> dict or None:
         if not with_id:
             model.pop("_id")
     return model
+def get_password_info(db_name:str, collection_name:str, encrypted_pw:str):
+    passwords = get_passwords(db_name, collection_name)
+    pw_info = passwords.get(encrypted_pw, None)
+    if pw_info is not None:
+        pw_info = pw_info["encryption_info"]
+    return pw_info
+
+def get_passwords(db_name:str, collection_name:str, with_id=False) -> dict or None:
+    collection = client[db_name][collection_name]
+    passwords = list(collection.find({"_id": "passwords"}))
+    if not bool(passwords):
+        passwords = {}
+    else:
+        passwords = passwords[0] 
+        if not with_id:
+            passwords.pop("_id")
+    return passwords
+
+def add_password(db_name:str, collection_name:str, enc_password:str, pw_info:dict):
+    collection = client[db_name][collection_name]
+    passwords = get_passwords(db_name, collection_name)
+    if bool(passwords):
+        passwords.update({enc_password: pw_info})
+        # Guardamos las contraseñas
+        collection.replace_one({"_id": "passwords"}, passwords)
+    else:
+        passwords = {"_id": "passwords", enc_password: pw_info}
+        # Guardamos las contraseñas
+        collection.insert_one(passwords)
+        
+def delete_password(db_name:str, collection_name:str, enc_password:str):
+    collection = client[db_name][collection_name]
+    passwords = get_passwords(db_name, collection_name)
+    if bool(passwords) and enc_password in passwords:
+        passwords.pop(enc_password)
+    else:
+        return
+    if len(passwords) == 0:
+        collection.delete_one({"_id": "passwords"})
+    else:
+        collection.replace_one({"_id": "passwords"}, passwords)
 
 def _get_type(type_name:str):
     if type_name == 'str':
@@ -159,6 +200,9 @@ def get_documents(db_name:str, collection_name:str, queries:dict={},
         model = get_model(db_name, collection_name, with_id=True)
         if bool(model) and model in docs:
             docs.remove(model)
+        passwords = get_passwords(db_name, collection_name, with_id=True)
+        if bool(passwords) and passwords in docs:
+            docs.remove(passwords)
         for doc in docs:
             doc["id"] = str(doc["_id"])
             doc.pop("_id")
@@ -182,8 +226,30 @@ def update_document(db_name:str, collection_name:str, old_doc_id, new_doc:dict):
     col = client[db_name][collection_name]
     if "id" in new_doc:
         new_doc.pop("id")
+    # Miramos si se ha añadido una nueva contraseña al registro (se ha actualizado 
+    # la vieja) para eliminar la antigua
+    model = get_model(db_name, collection_name)
+    old_doc = find_doc_by_id(db_name, collection_name, old_doc_id)
+    if bool(model):
+        for attr_dict in model.values():
+            name = attr_dict["name"]
+            old_val = old_doc[name]; new_val = new_doc[name] 
+            print(old_val, new_val)
+            if attr_dict["type"] == "password" and old_val != new_val:
+                delete_password(db_name, collection_name, old_val)
+                
     col.replace_one({"_id": ObjectId(old_doc_id)}, new_doc)
     
-def delete_document(db_name:str, collection_name:str, doc_id:str) -> None:
+def delete_document(db_name:str, collection_name:str, doc_id:str, delete_pwds=True) -> None:
     collection = client[db_name][collection_name]
+    if delete_pwds:
+        doc = find_doc_by_id(db_name, collection_name, doc_id)
+        model = get_model(db_name, collection_name)
+        if bool(model):
+            for attr_dict in model.values():
+                name = attr_dict["name"]
+                if attr_dict["type"] == "password":
+                    enc_pw = doc[name]
+                    delete_password(db_name, collection_name, enc_pw)
+                
     collection.delete_one({"_id": ObjectId(doc_id)})

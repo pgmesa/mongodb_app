@@ -176,14 +176,27 @@
                   <td>
                     <div style="white-space: pre-wrap;">{{doc|lookup:attr_dict.name}}</div>
                   </td>
-                  <td style="width: 1%; padding-left: 10px;">
-                    <form action="/display/{{db}}/{{collection}}">
-                      <button type="submit" class="img_button" name="unlock" value="{{attr_dict.name}}">
-                        <img src="{% static 'icons/key.ico' %}"
-                            alt="unlock" width="35px" height="35px">
-                      </button>
-                    </form>
-                  </td>
+                  {% if doc|lookup:attr_dict.name not in passwords %}
+                    <td style="width: 1%; padding-left: 10px;">
+                      <form action="/display/{{db}}/{{collection}}" method="POST">
+                        {% csrf_token %}
+                        <button type="submit" class="img_button" name="lock" value="{{doc|lookup:attr_dict.name}}">
+                          <img src="{% static 'icons/lock.ico' %}"
+                              alt="Lock" width="35px" height="35px">
+                        </button>
+                      </form>
+                    </td>
+                  {% else %}
+                    <td style="width: 1%; padding-left: 10px;">
+                      <form action="/display/{{db}}/{{collection}}" method="POST">
+                        {% csrf_token %}
+                        <button type="submit" class="img_button" name="unlock" value="{{doc|lookup:attr_dict.name}}">
+                          <img src="{% static 'icons/key.ico' %}"
+                              alt="unlock" width="35px" height="35px">
+                        </button>
+                      </form>
+                    </td>
+                  {% endif %}
                 </table>
               {% else %}
                 <div style="white-space: pre-wrap;">{{doc|lookup:attr_dict.name}}</div>
