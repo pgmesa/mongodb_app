@@ -730,11 +730,11 @@ def validate_key(request:HttpRequest, db:str, collection:str, doc_id:str, attr:s
     
     key = None
     pw_info = dbc.get_password_info(db, collection, encrypted)
-    seed = pw_info["seed"]
+    seed = int(pw_info["seed"])
     mode = pw_info["mode"]
     
     info = f" + Encrypted Password: {encrypted}\n"
-    info += f" + Seed: {int(seed)}\n"
+    info += f" + Seed: {seed}\n"
     info += f" + Mode: {mode}\n"
     context_dict["encryption_info"] = info
     
@@ -746,7 +746,7 @@ def validate_key(request:HttpRequest, db:str, collection:str, doc_id:str, attr:s
         if passed_key == str(key):
             info = {
                 "encrypted": encrypted,
-                "seed": int(seed),
+                "seed": seed,
                 "key": key,
                 "mode": mode
             }
@@ -758,8 +758,34 @@ def validate_key(request:HttpRequest, db:str, collection:str, doc_id:str, attr:s
                 doc_id = context_dict["doc_id"]
                 return HttpResponseRedirect(f'/update/{db}/{collection}/{doc_id}')
         else:
-            context_dict["err_msg"] = f"The key '{passed_key}' is incorrect"
+            context_dict["err_msg"] = f"The key '{passed_key}' is incorrect, changing ecryption..."
+            pw = decrypt(encrypted, seed, key, mode)
+            decrypted = None; timeout = 1000
+            while decrypted != pw:
+                if timeout == 0:
+                    context_dict['err_msg'] += "\n ERR: Chain encryption failed"
+                    break
+                encrypted, seed, key, mode = encrypt(pw)
+                decrypted = decrypt(encrypted, seed, key, mode)
+                timeout -= 1
+            else:
+                seed = sk.hide(key, seed)
+                doc[attr] = encrypted
+                pw_info = {
+                    "encryption_info":{
+                        "mode": mode,
+                        "seed": str(seed)
+                    }
+                }
+                dbc.add_password(db, collection, encrypted, pw_info)
+                dbc.update_document(db, collection, doc_id, doc)
+                info = f" + Encrypted Password: {encrypted}\n"
+                info += f" + Seed: {seed}\n"
+                info += f" + Mode: {mode}\n"
+                context_dict["encryption_info"] = info
+            
             context_dict["attempt"] = passed_key
+            
             
     _set_extra_vars(context_dict, 'validate_key')
     return render(request, 'validate_key.html', context_dict)
@@ -771,8 +797,9 @@ def display_documents(request:HttpRequest, db:str, collection:str, extra_vars:di
     secret_file, check_msg = _check_secret_file()
     if not secret_file:
         context_dict["warning"] = check_msg
-        
+    
     context_dict["passwords"] = dbc.get_passwords(db, collection, with_id=True)
+    print(dbc.get_passwords(db, collection, with_id=True))
     extra_vars = _get_extra_vars("display_documents")
     for var, val in extra_vars.items():
         context_dict[var] = val
