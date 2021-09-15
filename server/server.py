@@ -719,12 +719,14 @@ def delete_collection(request:HttpRequest, db:str, collection:str) -> HttpRespon
 
 # --------------------------------------------------------------------
 # -------------------------- DOCUMENT VIEWS --------------------------
+@_view_inspector
 def validate_key(request:HttpRequest, db:str, collection:str, encrypted:str):
     context_dict = {"db": db, "collection": collection}
-    extra_vars = _get_extra_vars("validate_key")
+    extra_vars = _get_extra_vars('validate_key')
     for var, val in extra_vars.items():
         context_dict[var] = val
     
+    key = None
     pw_info = dbc.get_password_info(db, collection, encrypted)
     seed = pw_info["seed"]
     mode = pw_info["mode"]
@@ -740,19 +742,24 @@ def validate_key(request:HttpRequest, db:str, collection:str, encrypted:str):
         import server.secret_key as sk
         key, seed = sk.get(seed)
         if passed_key == str(key):
-            msg = f"Contraseña '{encrypted}' desbloqueada"
             info = {
                 "encrypted": encrypted,
                 "seed": int(seed),
                 "key": key,
                 "mode": mode
             }
-            _set_extra_vars({"key_confirmed": info, "msg": msg}, 'display_documents')
-            return HttpResponseRedirect(f'/display/{db}/{collection}')
+            if 'display_view' in context_dict:
+                _set_extra_vars({"key_confirmed": info}, 'display_documents')
+                return HttpResponseRedirect(f'/display/{db}/{collection}')
+            elif 'update_view' in context_dict:
+                _set_extra_vars({"key_confirmed": info}, 'update_document')
+                doc_id = context_dict["doc_id"]
+                return HttpResponseRedirect(f'/update/{db}/{collection}/{doc_id}')
         else:
             context_dict["err_msg"] = f"The key '{passed_key}' is incorrect"
             context_dict["attempt"] = passed_key
-    
+            
+    _set_extra_vars(context_dict, 'validate_key')
     return render(request, 'validate_key.html', context_dict)
 
 @_view_inspector
@@ -874,7 +881,7 @@ def display_documents(request:HttpRequest, db:str, collection:str, extra_vars:di
                 key = pw_info["key"]
                 seed = int(pw_info["seed"])
                 mode = pw_info["mode"]
-        if "key_confirmed" in context_dict:
+        elif "key_confirmed" in context_dict:
             enc_pw = context_dict["key_confirmed"]["encrypted"]
             key = context_dict["key_confirmed"]["key"]
             seed = context_dict["key_confirmed"]["seed"]
@@ -898,16 +905,17 @@ def display_documents(request:HttpRequest, db:str, collection:str, extra_vars:di
                     target_doc[target_attr] = decrypted
                     docs.pop(index)
                     docs.insert(index, target_doc)
+                    context_dict["msg"] = f"Contraseña '{enc_pw}' desbloqueada"
                 except Exception:
                     msg = "Fallo al desencriptar, comprueba que el fichero "
                     msg += "'server/secret_key.py' es el correcto"
                     context_dict["err_msg"] = msg
         elif secret_file:
-            _set_extra_vars({'display': True}, 'validate_key')
+            _set_extra_vars({'display_view': True}, 'validate_key')
             return HttpResponseRedirect(f'/validate/{db}/{collection}/{enc_pw}')
         else:
             msg = "Es necesario un fichero 'server/secret_key.py' para "
-            msg += f"desbloquear las contraseña '{enc_pw}'"
+            msg += f"desbloquear la contraseña '{enc_pw}'"
             context_dict["err_msg"] = msg
             
     # Mostramos los documentos segun si hay o no hay modelo establecido
@@ -1072,10 +1080,12 @@ def duplicate_document(request:HttpRequest, db:str, collection:str, doc_id:str) 
 
 @_view_inspector
 def update_document(request:HttpRequest, db:str, collection:str, doc_id:str) -> HttpResponse:
+    secret_file, _ = _check_secret_file()
     context_dict = {"db": db, "collection": collection}
     context_dict["textareas"] = []; context_dict["show_pwds"] = []; context_dict["locked_pwds"] = {}
     context_dict["values"] = {}
     extra_vars = _get_extra_vars('update_document')
+    
     for var, value in extra_vars.items():
         context_dict[var] = value
     view_params = register.load('view_params')
@@ -1085,6 +1095,13 @@ def update_document(request:HttpRequest, db:str, collection:str, doc_id:str) -> 
     context_dict["values"] = doc
     model = dbc.get_model(db, collection)
     context_dict["model"] = model
+    # Miramos si hay contraseñas vacías
+    void_pwds = []
+    for attr_dict in model.values():
+        name = attr_dict["name"]; val = doc[name]
+        if attr_dict["type"] == 'password' and val == "-":
+            void_pwds.append(name)
+    context_dict["void_pwds"] = void_pwds
     
     # Vemos si nos han redirigido o ha sido un boton de la view (textareas ...)
     if view_params["redirected"]:
@@ -1139,25 +1156,50 @@ def update_document(request:HttpRequest, db:str, collection:str, doc_id:str) -> 
                 context_dict["show_pwds"].remove(attr)
             else:
                 context_dict["show_pwds"].append(attr)
-        elif "unlock" in form_dict or "lock" in form_dict:
-            if "unlock" in form_dict:
-                attr = form_dict.pop("unlock")
-                if attr in context_dict["locked_pwds"]:
-                    context_dict["locked_pwds"].pop(attr)
-                enc_pw = doc[attr]
-                pw_info = dbc.get_password_info(db, collection, enc_pw)
-                if pw_info is None:
-                    msg = f"La contraseña '{enc_pw}' no se encuentra almacenada en el sistema"
-                    context_dict["err_msg"] = msg
-                else:
-                    form_dict[attr] = decrypt(enc_pw, int(pw_info["seed"]), pw_info["key"])
-            else:
-                attr = form_dict.pop("lock")
-                context_dict["locked_pwds"].update({attr: doc[attr]})
-            
-        
+                
         context_dict["values"] = form_dict
-    
+    # Desencriptamos la contraseña seleccionada
+    if "unlock" in form_dict or "key_confirmed" in context_dict:
+        key = None
+        if "unlock" in form_dict:
+            attr = form_dict.pop("unlock")
+            enc_pw = doc[attr]
+            pw_info = dbc.get_password_info(db, collection, enc_pw)
+            if pw_info is None:
+                msg = f"La contraseña '{enc_pw}' no se encuentra almacenada en el sistema"
+                context_dict["err_msg"] = msg
+            elif "key" in pw_info:
+                key = pw_info["key"]
+                seed = int(pw_info["seed"])
+                mode = pw_info["mode"]
+        elif "key_confirmed" in context_dict:
+            enc_pw = context_dict["key_confirmed"]["encrypted"]
+            key = context_dict["key_confirmed"]["key"]
+            seed = context_dict["key_confirmed"]["seed"]
+            mode = context_dict["key_confirmed"]["mode"]
+        if key is not None:
+            try:
+                decrypted = decrypt(enc_pw, seed, key, mode)
+                for key in doc:
+                    if doc[key] == enc_pw:
+                        doc[key] = decrypted
+                        context_dict["locked_pwds"].pop(key)  
+                        context_dict["show_pwds"].append(key)
+                        break   
+                context_dict["msg"] = f"Contraseña '{enc_pw}' desbloqueada"
+                context_dict["values"] = doc
+            except Exception:
+                msg = "Fallo al desencriptar, comprueba que el fichero "
+                msg += "'server/secret_key.py' es el correcto"
+                context_dict["err_msg"] = msg
+        elif secret_file:
+            _set_extra_vars({'update_view': True, "doc_id": doc_id}, 'validate_key')
+            return HttpResponseRedirect(f'/validate/{db}/{collection}/{enc_pw}')
+        else:
+            msg = "Es necesario un fichero 'server/secret_key.py' para "
+            msg += f"desbloquear la contraseña '{enc_pw}'"
+            context_dict["err_msg"] = msg
+            
     _set_extra_vars(
         {"textareas": 
             context_dict["textareas"],

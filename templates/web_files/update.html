@@ -74,29 +74,24 @@
                       {% if attr_dict.name in locked_pwds %}
                         <input type="text" name="{{attr_dict.name}}" value="{{locked_pwds|lookup:attr_dict.name}}" disabled>
                       {% else %}
-                        <input type="text" name="{{attr_dict.name}}" value="{{values|lookup:attr_dict.name}}">
+                        <input {% if attr_dict.name in show_pwds %}type="text"{% else %}type="{{attr_dict.type|get_type}}"{% endif %}
+                          name="{{attr_dict.name}}" value="{{values|lookup:attr_dict.name}}">
                       {% endif %}
                     {% else %}
                       <input type="text" name="{{attr_dict.name}}" value="{{values|lookup:attr_dict.name}}">
                     {% endif %}
                   {% else %}
-                    <input type="text" name="{{attr_dict.name}}" value="">
+                    <input {% if attr_dict.name in show_pwds %}type="text"{% else %}type="{{attr_dict.type|get_type}}"{% endif %}
+                     name="{{attr_dict.name}}" value="">
                   {% endif %}
                 {% endif %}
               </td>
               {% if attr_dict.type == 'password' %}
-                {% if values|lookup:attr_dict.name == '-' %}
+                {% if attr_dict.name in void_pwds or attr_dict.name not in locked_pwds %}
                   <td>
                     <button type="submit" class="img_button" name="show" value="{{attr_dict.name}}">
                       <img src="{% static 'icons/eye.ico' %}"
                           alt="show" width="35px" height="35px">
-                    </button>
-                  </td>
-                {% elif attr_dict.name not in locked_pwds %}
-                  <td>
-                    <button type="submit" class="img_button" name="lock" value="{{attr_dict.name}}">
-                      <img src="{% static 'icons/lock.ico' %}"
-                          alt="Lock" width="35px" height="35px">
                     </button>
                   </td>
                 {% else %}

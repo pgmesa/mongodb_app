@@ -156,9 +156,12 @@ class Cli:
                 raise CmdLineError(err_msg)
             extra_args = []
             for extra in params:
-                try:
-                    extra_args.append(int(extra))
-                except:
+                if cmd.convert_ints:
+                    try:
+                        extra_args.append(int(extra))
+                    except:
+                        extra_args.append(extra)
+                else:
                     extra_args.append(extra)
             if cmd.choices == None:
                 return extra_args

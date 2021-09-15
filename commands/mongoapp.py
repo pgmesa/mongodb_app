@@ -12,6 +12,8 @@ from .restore_cmd.restore import get_restore_cmd, restore
 from .register_cmd.register import get_register_cmd, register
 from .repo_cmd.repo import get_repo_cmd, repo
 from .clear_cmd.clear import get_clear_cmd, clear
+from .encrypt_cmd.encrypt import encrypt, get_encrypt_cmd
+from .decrypt_cmd.decrypt import decrypt, get_decrypt_cmd
 from configs.settings import BASE_DIR
 from mypy_modules.process import process
 from mypy_modules.register import register as config_reg
@@ -47,6 +49,12 @@ def get_mongoapp_cmd() -> Command:
     # ++++++++++++++++++++++++++++++++
     clear_cmd = get_clear_cmd()
     mongoapp.nest_cmd(clear_cmd)
+    # ++++++++++++++++++++++++++++++++
+    encrypt_cmd = get_encrypt_cmd()
+    mongoapp.nest_cmd(encrypt_cmd)
+    # ++++++++++++++++++++++++++++++++
+    decrypt_cmd = get_decrypt_cmd()
+    mongoapp.nest_cmd(decrypt_cmd)
     # --------------------------------
     dir_opt = def_dir_opt()
     mongoapp.add_option(dir_opt)
@@ -183,6 +191,12 @@ def mongoapp(args:list=[], options:dict={}, flags:list=[], nested_cmds:dict={}):
     elif "clear" in nested_cmds:
         cmd_info = nested_cmds.pop("clear")
         clear(**cmd_info)
+    elif "encrypt" in nested_cmds:
+        cmd_info = nested_cmds.pop("encrypt")
+        encrypt(**cmd_info)
+    elif "decrypt" in nested_cmds:
+        cmd_info = nested_cmds.pop("decrypt")
+        decrypt(**cmd_info)
     else:
         print("     Aplicacion para gestionar Bases de Datos de MongoDB")
         print("     Intoduce -h para desplegar la ayuda")

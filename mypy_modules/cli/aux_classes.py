@@ -34,7 +34,8 @@ class Command:
         """
     def __init__(self, name:str, extra_arg:any=False, mandatory=False,
                  multi=False, choices:list=None, default:any=None,
-                 description:str=None, mandatory_nested_cmd=False):
+                 description:str=None, mandatory_nested_cmd=False,
+                 convert_ints=False):
         self.name = name
         self.extra_arg = extra_arg
         self.choices = choices
@@ -46,6 +47,7 @@ class Command:
         self.options = {}
         self.flags = {}
         self.nested_cmds = {}
+        self.convert_ints = convert_ints
         
     def nest_cmd(self, cmd):
         """AAnido un comando en el comando principal
@@ -88,10 +90,11 @@ class Option(Command):
         anidados y que permite aportar funcionalidades al comando principal"""
     def __init__(self, name:str, extra_arg:any=False, mandatory=False,
                  multi=False, choices:list=None, default:any=None,
-                 description:str=None):
+                 description:str=None, convert_ints=False):
         super().__init__(
             name, extra_arg=extra_arg, mandatory=mandatory, multi=multi,
-            choices=choices, default=default, description=description)
+            choices=choices, default=default, description=description,
+            convert_ints=convert_ints)
     
 # --------------------------------------------------------------------     
 class Flag:
