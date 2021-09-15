@@ -157,7 +157,7 @@ def update_model(db_name:str, collection_name:str, new_model:dict, override_type
         if attr not in old_model:
             added_name = attr_dict["name"]
             for doc in docs:
-                doc[added_name] = ""
+                doc[added_name] = "-"
     # Nombramos bien los atributos del nuevo modelo
     new_model_ordered = {}
     attr_dicts = list(new_model.values())
@@ -233,8 +233,7 @@ def update_document(db_name:str, collection_name:str, old_doc_id, new_doc:dict):
     if bool(model):
         for attr_dict in model.values():
             name = attr_dict["name"]
-            old_val = old_doc[name]; new_val = new_doc[name] 
-            print(old_val, new_val)
+            old_val = old_doc[name]; new_val = new_doc.get(name, None)
             if attr_dict["type"] == "password" and old_val != new_val:
                 delete_password(db_name, collection_name, old_val)
                 

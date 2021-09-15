@@ -85,7 +85,14 @@
                 {% endif %}
               </td>
               {% if attr_dict.type == 'password' %}
-                {% if attr_dict.name not in locked_pwds %}
+                {% if values|lookup:attr_dict.name == '-' %}
+                  <td>
+                    <button type="submit" class="img_button" name="show" value="{{attr_dict.name}}">
+                      <img src="{% static 'icons/eye.ico' %}"
+                          alt="show" width="35px" height="35px">
+                    </button>
+                  </td>
+                {% elif attr_dict.name not in locked_pwds %}
                   <td>
                     <button type="submit" class="img_button" name="lock" value="{{attr_dict.name}}">
                       <img src="{% static 'icons/lock.ico' %}"

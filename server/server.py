@@ -174,6 +174,30 @@ def _modify_data(name:str, copy_to_name:str=None, delete:bool=False):
                         new_reg[key] = new_values
     register.override(new_reg)
     
+def _check_secret_file():
+    try:
+        import server.secret_key as sk
+        sk.get; sk.hide
+        sk.hide(1234, 1213423423); sk.get(187242423478894)
+        return True, None
+    except ImportError:
+        valid = False
+        msg = "No se ha implementado un fichero secret_key.py en la carpeta /server. "
+    except AttributeError:
+        valid = False
+        msg = "El fichero server/secret_key.py no contiene alguna de las funciones sk.get o sk.hide. "
+    except Exception:
+        valid = False
+        msg = "En las funciones sk.get o sk.hide saltan excepciones (se ignoraran). "
+        
+    err_msg = "Las encriptaciones de las contraseñas no son seguras, las claves son visibles. "
+    err_msg += msg
+    err_msg += "En caso de haber contraseñas guardadas previamente, sera necesario el fichero "
+    err_msg += "con las funciones originales para desbloquearlas (en caso de que se usara algun fichero) "
+    err_msg += "(por seguridad, el programa no le avisara cuando las funciones son las correctas)"
+    
+    return valid, err_msg
+    
 # --------------------------------------------------------------------
 # --------------------------- ERROR VIEW -----------------------------
 def error(request:HttpRequest) -> HttpResponse:
@@ -695,12 +719,53 @@ def delete_collection(request:HttpRequest, db:str, collection:str) -> HttpRespon
 
 # --------------------------------------------------------------------
 # -------------------------- DOCUMENT VIEWS --------------------------
-@_view_inspector
-def display_documents(request:HttpRequest, db:str, collection:str , extra_vars:dict={}) -> HttpResponse:
+def validate_key(request:HttpRequest, db:str, collection:str, encrypted:str):
     context_dict = {"db": db, "collection": collection}
+    extra_vars = _get_extra_vars("validate_key")
+    for var, val in extra_vars.items():
+        context_dict[var] = val
+    
+    pw_info = dbc.get_password_info(db, collection, encrypted)
+    seed = pw_info["seed"]
+    mode = pw_info["mode"]
+    
+    info = f" + Encrypted Password: {encrypted}\n"
+    info += f" + Seed: {int(seed)}\n"
+    info += f" + Mode: {mode}\n"
+    context_dict["encryption_info"] = info
+    
+    key_form = _clean_form(request.POST)
+    if bool(key_form):
+        passed_key = key_form.pop("key")
+        import server.secret_key as sk
+        key, seed = sk.get(seed)
+        if passed_key == str(key):
+            msg = f"Contraseña '{encrypted}' desbloqueada"
+            info = {
+                "encrypted": encrypted,
+                "seed": int(seed),
+                "key": key,
+                "mode": mode
+            }
+            _set_extra_vars({"key_confirmed": info, "msg": msg}, 'display_documents')
+            return HttpResponseRedirect(f'/display/{db}/{collection}')
+        else:
+            context_dict["err_msg"] = f"The key '{passed_key}' is incorrect"
+            context_dict["attempt"] = passed_key
+    
+    return render(request, 'validate_key.html', context_dict)
+
+@_view_inspector
+def display_documents(request:HttpRequest, db:str, collection:str, extra_vars:dict={}) -> HttpResponse:
+    context_dict = {"db": db, "collection": collection}
+    # Checkeamos si hay existe o es valido el archivo secret_key.py
+    secret_file, check_msg = _check_secret_file()
+    if not secret_file:
+        context_dict["warning"] = check_msg
+        
     extra_vars = _get_extra_vars("display_documents")
-    print(dbc.get_passwords(db, collection, with_id=True))
     context_dict["passwords"] = dbc.get_passwords(db, collection, with_id=True)
+    print(context_dict["passwords"])
     for var, val in extra_vars.items():
         context_dict[var] = val
     # Miramos si hay que eliminar todos los docs
@@ -798,38 +863,68 @@ def display_documents(request:HttpRequest, db:str, collection:str , extra_vars:d
                 elif operator == 'sum': result = sum_
             calculated_stats[field] = result
         context_dict["calculated_stats"] = calculated_stats 
+    # Desencriptamos la contraseña seleccionada
     unlock_form = _clean_form(request.POST)
-    if "unlock" in unlock_form:
-        enc_pw = unlock_form.pop('unlock')
-        target_doc = None; target_attr = None
-        for doc in docs:
-            for attr in doc:
-                val = doc[attr]
-                if val == enc_pw:
-                    target_doc = doc
-                    target_attr = attr
-                    break
-            else:
-                continue
-            break
-        if target_doc is not None:
-            index = docs.index(doc)
+    if "unlock" in unlock_form or "key_confirmed" in context_dict:
+        key = None
+        if "unlock" in unlock_form:
+            enc_pw = unlock_form.pop('unlock')
             pw_info = dbc.get_password_info(db, collection, enc_pw)
-            target_doc[target_attr] = decrypt(enc_pw, int(pw_info["seed"]), pw_info["key"])
-            docs.pop(index)
-            docs.insert(index, target_doc)
+            if "key" in pw_info:
+                key = pw_info["key"]
+                seed = int(pw_info["seed"])
+                mode = pw_info["mode"]
+        if "key_confirmed" in context_dict:
+            enc_pw = context_dict["key_confirmed"]["encrypted"]
+            key = context_dict["key_confirmed"]["key"]
+            seed = context_dict["key_confirmed"]["seed"]
+            mode = context_dict["key_confirmed"]["mode"]
+        if key is not None:
+            target_doc = None; target_attr = None
+            for doc in docs:
+                for attr in doc:
+                    val = doc[attr]
+                    if val == enc_pw:
+                        target_doc = doc
+                        target_attr = attr
+                        break
+                else:
+                    continue
+                break
+            if target_doc is not None:
+                try:
+                    decrypted = decrypt(enc_pw, seed, key, mode)
+                    index = docs.index(doc)
+                    target_doc[target_attr] = decrypted
+                    docs.pop(index)
+                    docs.insert(index, target_doc)
+                except Exception:
+                    msg = "Fallo al desencriptar, comprueba que el fichero "
+                    msg += "server/secret_key.py es el correcto"
+                    context_dict["err_msg"] = msg
+        else:
+            _set_extra_vars({'display': True}, 'validate_key')
+            return HttpResponseRedirect(f'/validate/{db}/{collection}/{enc_pw}')
+            
     # Mostramos los documentos segun si hay o no hay modelo establecido
     model_doc = dbc.get_model(db, collection)
     context_dict["model"] = model_doc
     if bool(model_doc):
         # Miramos si hay algun atributo que sea un numero 
+        has_passwords = False
         for attr_dict in model_doc.values():
             tp = attr_dict["type"]
             if tp != 'str' and tp != 'password':
                 context_dict["numbers"] = True
                 break
+            elif tp == 'password':
+                has_passwords = True
         else:
             context_dict["numbers"] = False
+        # Quitamos el warning si no hay contraseñas en el modelo
+        if not has_passwords and 'warning' in context_dict:
+            context_dict.pop("warning")
+            
         if not bool(docs):
             err_msg = "No existen documentos en esta coleccion"
             if "filtered" in context_dict:
@@ -876,11 +971,19 @@ def _encrypt(doc:dict, model:dict, db:str, collection:str):
                         msg = f" No se ha podido encryptar la contraseña '{value}'"
                         raise EncryptionError(msg)
                 doc[name] = encrypted
-                # seed = sk.hide(key, seed)
-                pw_info = {
-                    "encryption_info":
-                        {"mode": mode, "seed": str(seed), "key": key}
-                }
+                is_valid, _ = _check_secret_file()
+                if is_valid:
+                    import server.secret_key as sk
+                    seed = sk.hide(key, seed)
+                    pw_info = {
+                        "encryption_info":
+                            {"mode": mode, "seed": str(seed)}
+                    }
+                else:
+                    pw_info = {
+                        "encryption_info":
+                            {"mode": mode, "seed": str(seed), "key": key}
+                    }
                 dbc.add_password(db, collection, encrypted, pw_info)
                 
 @_view_inspector
