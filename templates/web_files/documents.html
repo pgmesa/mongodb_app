@@ -175,7 +175,7 @@
                 <table style="width: 100%;">
                   {% if doc|lookup:attr_dict.name not in passwords %}
                     <td>
-                      <div style="white-space: pre-wrap; text-decoration: underline; color: grey; text-decoration-color: black;">{{doc|lookup:attr_dict.name}}</div>
+                      <div style="white-space: pre-wrap; color: grey;">{{doc|lookup:attr_dict.name}}</div>
                     </td>
                     <td style="width: 1%; padding-left: 10px;">
                       <form action="/display/{{db}}/{{collection}}" method="POST">

@@ -900,11 +900,15 @@ def display_documents(request:HttpRequest, db:str, collection:str, extra_vars:di
                     docs.insert(index, target_doc)
                 except Exception:
                     msg = "Fallo al desencriptar, comprueba que el fichero "
-                    msg += "server/secret_key.py es el correcto"
+                    msg += "'server/secret_key.py' es el correcto"
                     context_dict["err_msg"] = msg
-        else:
+        elif secret_file:
             _set_extra_vars({'display': True}, 'validate_key')
             return HttpResponseRedirect(f'/validate/{db}/{collection}/{enc_pw}')
+        else:
+            msg = "Es necesario un fichero 'server/secret_key.py' para "
+            msg += f"desbloquear las contraseña '{enc_pw}'"
+            context_dict["err_msg"] = msg
             
     # Mostramos los documentos segun si hay o no hay modelo establecido
     model_doc = dbc.get_model(db, collection)
