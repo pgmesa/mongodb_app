@@ -115,10 +115,10 @@ def _view_inspector(func):
             dic = {"err_msg": err_msg, "conserv_format": True, "failed_path": args[0].path_info}
             _set_extra_vars(dic, 'error')
             return HttpResponseRedirect('/error/')
-        # except Exception as err:
-        #     err_msg = f"ERROR: {err}"
-        #     _set_extra_vars({"err_msg": err_msg, "failed_path": args[0].path_info}, 'error')
-        #     return HttpResponseRedirect('/error/')
+        except Exception as err:
+            err_msg = f"ERROR: {err}"
+            _set_extra_vars({"err_msg": err_msg, "failed_path": args[0].path_info}, 'error')
+            return HttpResponseRedirect('/error/')
     return view_inspector
 
 def _order_lists(list_to_order:list, order_list:list) -> list:
