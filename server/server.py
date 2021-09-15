@@ -720,7 +720,9 @@ def delete_collection(request:HttpRequest, db:str, collection:str) -> HttpRespon
 # --------------------------------------------------------------------
 # -------------------------- DOCUMENT VIEWS --------------------------
 @_view_inspector
-def validate_key(request:HttpRequest, db:str, collection:str, encrypted:str):
+def validate_key(request:HttpRequest, db:str, collection:str, doc_id:str, attr:str):
+    doc = dbc.find_doc_by_id(db, collection, doc_id)
+    encrypted = doc[attr]
     context_dict = {"db": db, "collection": collection}
     extra_vars = _get_extra_vars('validate_key')
     for var, val in extra_vars.items():
@@ -770,9 +772,8 @@ def display_documents(request:HttpRequest, db:str, collection:str, extra_vars:di
     if not secret_file:
         context_dict["warning"] = check_msg
         
-    extra_vars = _get_extra_vars("display_documents")
     context_dict["passwords"] = dbc.get_passwords(db, collection, with_id=True)
-    print(context_dict["passwords"])
+    extra_vars = _get_extra_vars("display_documents")
     for var, val in extra_vars.items():
         context_dict[var] = val
     # Miramos si hay que eliminar todos los docs
@@ -886,18 +887,20 @@ def display_documents(request:HttpRequest, db:str, collection:str, extra_vars:di
             key = context_dict["key_confirmed"]["key"]
             seed = context_dict["key_confirmed"]["seed"]
             mode = context_dict["key_confirmed"]["mode"]
+            
+        target_doc = None; target_attr = None
+        for doc in docs:
+            for attr in doc:
+                val = doc[attr]
+                if val == enc_pw:
+                    target_doc = doc
+                    target_attr = attr
+                    break
+            else:
+                continue
+            break  
         if key is not None:
-            target_doc = None; target_attr = None
-            for doc in docs:
-                for attr in doc:
-                    val = doc[attr]
-                    if val == enc_pw:
-                        target_doc = doc
-                        target_attr = attr
-                        break
-                else:
-                    continue
-                break
+            
             if target_doc is not None:
                 try:
                     decrypted = decrypt(enc_pw, seed, key, mode)
@@ -912,7 +915,8 @@ def display_documents(request:HttpRequest, db:str, collection:str, extra_vars:di
                     context_dict["err_msg"] = msg
         elif secret_file:
             _set_extra_vars({'display_view': True}, 'validate_key')
-            return HttpResponseRedirect(f'/validate/{db}/{collection}/{enc_pw}')
+            target_doc_id = target_doc["id"]
+            return HttpResponseRedirect(f'/validate/{db}/{collection}/{target_doc_id}/{target_attr}')
         else:
             msg = "Es necesario un fichero 'server/secret_key.py' para "
             msg += f"desbloquear la contraseña '{enc_pw}'"
@@ -1194,7 +1198,12 @@ def update_document(request:HttpRequest, db:str, collection:str, doc_id:str) -> 
                 context_dict["err_msg"] = msg
         elif secret_file:
             _set_extra_vars({'update_view': True, "doc_id": doc_id}, 'validate_key')
-            return HttpResponseRedirect(f'/validate/{db}/{collection}/{enc_pw}')
+            attr = None
+            for key in doc:
+                if doc[key] == enc_pw:
+                    attr = key
+                    break
+            return HttpResponseRedirect(f'/validate/{db}/{collection}/{doc_id}/{attr}')
         else:
             msg = "Es necesario un fichero 'server/secret_key.py' para "
             msg += f"desbloquear la contraseña '{enc_pw}'"

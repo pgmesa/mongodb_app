@@ -43,5 +43,5 @@ urlpatterns = [
     path('delete/<db>/<collection>/<doc_id>', delete_document),
     path('filter/<db>/<collection>', filter_documents),
     path('sort/<db>/<collection>', sort_documents),
-    path('validate/<db>/<collection>/<encrypted>', validate_key),
+    path('validate/<db>/<collection>/<doc_id>/<attr>', validate_key),
 ]
