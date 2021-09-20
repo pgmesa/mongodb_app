@@ -799,7 +799,6 @@ def display_documents(request:HttpRequest, db:str, collection:str, extra_vars:di
         context_dict["warning"] = check_msg
     
     context_dict["passwords"] = dbc.get_passwords(db, collection, with_id=True)
-    print(dbc.get_passwords(db, collection, with_id=True))
     extra_vars = _get_extra_vars("display_documents")
     for var, val in extra_vars.items():
         context_dict[var] = val
