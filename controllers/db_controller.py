@@ -224,7 +224,7 @@ def find_doc_by_id(db_name:str, collection_name:str, _id:str) -> dict:
 def add_document(db_name:str, collection_name:str, doc:str) -> None:
     collection = client[db_name][collection_name]
     _id = doc.get("_id", None)
-    if _id is not None and not isinstance(_id, ObjectId) and _id != "model":
+    if _id is not None and not isinstance(_id, ObjectId) and _id != "model" and _id != "passwords":
         doc["_id"] = ObjectId(_id)
     collection.insert_one(doc)
     
