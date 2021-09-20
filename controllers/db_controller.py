@@ -150,8 +150,12 @@ def update_model(db_name:str, collection_name:str, new_model:dict, override_type
                                     raise err
                         doc[new_name] = parsed
         else:
-            for doc in docs:
-                doc.pop(old_name)    
+            for attr_dict in new_model.values():
+                if old_name == attr_dict["name"]:
+                    break
+            else: 
+                for doc in docs:
+                    doc.pop(old_name)   
     # Miramos que atributos nuevos se han añadido
     for attr, attr_dict in new_model.items():
         if attr not in old_model:
@@ -165,7 +169,10 @@ def update_model(db_name:str, collection_name:str, new_model:dict, override_type
         new_model_ordered[f"attr{i+1}"] = attr_dict
     # Guardamos las actualizaciones de los documentos
     for doc in docs:
-        update_document(db_name, collection_name, doc["id"], doc)
+        # No usar update_document(), el model se va a actualizar despues
+        col = client[db_name][collection_name]
+        doc_id = doc.pop("id")
+        col.replace_one({"_id": ObjectId(doc_id)}, doc)
     # Guardamos el nuevo modelo renombrado
     collection = client[db_name][collection_name]
     collection.replace_one({"_id": "model"}, new_model_ordered)
