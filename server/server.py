@@ -115,10 +115,10 @@ def _view_inspector(func):
             dic = {"err_msg": err_msg, "conserv_format": True, "failed_path": args[0].path_info}
             _set_extra_vars(dic, 'error')
             return HttpResponseRedirect('/error/')
-        except Exception as err:
-            err_msg = f"ERROR: {err}"
-            _set_extra_vars({"err_msg": err_msg, "failed_path": args[0].path_info}, 'error')
-            return HttpResponseRedirect('/error/')
+        # except Exception as err:
+        #     err_msg = f"ERROR: {err}"
+        #     _set_extra_vars({"err_msg": err_msg, "failed_path": args[0].path_info}, 'error')
+        #     return HttpResponseRedirect('/error/')
     return view_inspector
 
 def _order_lists(list_to_order:list, order_list:list) -> list:
@@ -865,14 +865,15 @@ def display_documents(request:HttpRequest, db:str, collection:str, extra_vars:di
                 register.update('stats', stats)
             else:
                 model = dbc.get_model(db, collection)
-                # Comprobamos que no se han cambiado lso tipos de datos
-                for attr_dict in model.values():
-                    if attr_dict["name"]+"_stat" in stats_form:
-                        tp = attr_dict["type"]
-                        if tp != 'int' and tp != 'float':
-                            stats_form.pop(attr_dict["name"]+"_stat")
-                stats[f"{db}.{collection}"] = stats_form
-                register.update('stats', stats)
+                if bool(model):
+                    # Comprobamos que no se han cambiado los tipos de datos
+                    for attr_dict in model.values():
+                        if attr_dict["name"]+"_stat" in stats_form:
+                            tp = attr_dict["type"]
+                            if tp != 'int' and tp != 'float':
+                                stats_form.pop(attr_dict["name"]+"_stat")
+                    stats[f"{db}.{collection}"] = stats_form
+                    register.update('stats', stats)
         else:
             stats_form = {}
             register.add('stats', {f"{db}.{collection}": stats_form})
