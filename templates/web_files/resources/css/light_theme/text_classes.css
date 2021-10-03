@@ -31,7 +31,7 @@
 
 /* Para el color de las contraseñas desbloqueadas */
 .unlocked_pw {
-    color: grey;
+    color: gray;
 }
 .encrypted_info {
     white-space: pre-wrap; 
@@ -41,7 +41,7 @@
 
 /* Para el color de los indices */
 .index {
-    color: red;
+    color: gray;
 }
 
 /* Para el color de los atributos */
@@ -49,7 +49,7 @@
     color: blue;
 }
 .attr_type {
-    color: red;
+    color: gray;
 }
 
 /* Para las stats */
