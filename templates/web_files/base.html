@@ -27,11 +27,18 @@
     {% endif %}
 
     <script>
-      function change_theme() {
-        let theme_form = document.getElementById("theme_form");
-        theme_form.submit();
-      }
+      document.addEventListener('DOMContentLoaded', (event) => {
+        let slider = document.getElementById('slider')
+        slider.onchange = () => {
+          let theme_form = document.getElementById('theme_form');
+          let input = document.createElement('input');
+          input.name = "toggle_theme"; input.type = "text";
+          theme_form.appendChild(input);
+          theme_form.submit();
+        }
+      })
     </script>
+
   </head>
 
   <body>
@@ -55,9 +62,8 @@
             <label class="switch">
               <form action="" method="POST" id="theme_form">
                 {% csrf_token %}
-                <input type="checkbox" onclick="change_theme();" {% if 'dark'|is_theme %}checked{% endif %}>
+                <input type="checkbox" id="slider" name="toggle_theme" {% if 'dark'|is_theme %}checked{% endif %}>
                 <span class="slider round"></span>
-                <input type="submit" name="toggle_theme" value="True">
               </form>
             </label>
           </td>
@@ -133,5 +139,6 @@
     <footer>
       <p>Made by: Pablo Garcia Mesa</p>
     </footer>
+    
   </body>
 </html>

@@ -93,7 +93,6 @@ def _view_inspector(func):
         # request.POST
         request:HttpRequest = args[0]
         theme_form = _clean_form(request.POST)
-        print(theme_form)
         if bool(theme_form) and "toggle_theme" in theme_form:
             # Cambiamos tema
             theme = register.load("theme")
@@ -105,7 +104,6 @@ def _view_inspector(func):
             elif theme == 'dark':
                 theme = 'light'
             register.update('theme', theme)
-            print(theme)
         # -----------------------------------------------------
         view_params = register.load('view_params')
         if view_params is None:
@@ -133,10 +131,10 @@ def _view_inspector(func):
             dic = {"err_msg": err_msg, "conserv_format": True, "failed_path": request.path_info}
             _set_extra_vars(dic, 'error')
             return HttpResponseRedirect('/error/')
-        # except Exception as err:
-        #     err_msg = f"ERROR: {err}"
-        #     _set_extra_vars({"err_msg": err_msg, "failed_path": args[0].path_info}, 'error')
-        #     return HttpResponseRedirect('/error/')
+        except Exception as err:
+            err_msg = f"ERROR: {err}"
+            _set_extra_vars({"err_msg": err_msg, "failed_path": args[0].path_info}, 'error')
+            return HttpResponseRedirect('/error/')
     return view_inspector
 
 def _order_lists(list_to_order:list, order_list:list) -> list:
