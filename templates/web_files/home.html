@@ -5,7 +5,7 @@
 
 {% block td_nav %}
   <td style="padding: 0 10px;">
-    <a href="/add/" style="color: grey;">Add DataBase</a>
+    <a href="/add/" class="nav_option">Add DataBase</a>
   </td>
 {% endblock %}
 
@@ -15,7 +15,7 @@
   </h2>
   <table style="margin: auto;">
     <tr>
-      <td style="color: orange;">
+      <td class="show_app_only_msg">
         Show app databases only
       </td>
       <td style="padding-top: 5px;">
@@ -56,13 +56,13 @@
           {% if db in app_dbs %}
             <td style="text-align: left; padding: 0px 15px;">
               <ul style="list-style-position: inside;">
-                <li><a href="/display/{{db}}">{{db}}</a></li>
+                <li><a href="/display/{{db}}" class="from_app">{{db}}</a></li>
               </ul>
             </td>
           {% else %}
             <td style="text-align: left; padding: 0px 15px;">
               <ul style="list-style-position: inside;">
-                <li><a href="/display/{{db}}" style="color: red;">{{db}}</a></li>
+                <li><a href="/display/{{db}}" class="not_from_app">{{db}}</a></li>
               </ul>
             </td>
           {% endif %}

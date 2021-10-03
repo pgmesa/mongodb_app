@@ -6,11 +6,11 @@
 {% block td_nav %}
   {% if update_collection or update_doc %}
     <td style="padding: 0 10px;">
-      <a href="/display/{{db}}">Collections</a>
+      <a class="nav_goback" href="/display/{{db}}">Collections</a>
     </td>
     {% if update_doc %}
       <td style="padding: 0 10px;">
-        <a href="/display/{{db}}/{{collection}}">Documents</a>
+        <a class="nav_goback" href="/display/{{db}}/{{collection}}">Documents</a>
       </td>
     {% endif %}
   {% endif %}

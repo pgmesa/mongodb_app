@@ -16,13 +16,13 @@
     <table style="margin: auto;">
       <tr>
         {% if delete_db %}
-          <h3 style="color: blue;">¿Eliminar Base de Datos '{{db}}'?</h3>
+          <h3 class="info">¿Eliminar Base de Datos '{{db}}'?</h3>
         {% elif delete_collection %}
-          <h3 style="color: blue;">¿Eliminar Coleccion '{{collection}}'?</h3>
+          <h3 class="info">¿Eliminar Coleccion '{{collection}}'?</h3>
         {% elif delete_doc %}
-          <h3 style="color: blue;">¿Eliminar Documento con id: '{{doc_id}}'?</h3>
+          <h3 class="info">¿Eliminar Documento con id: '{{doc_id}}'?</h3>
         {% elif delete_docs %}
-          <h3 style="color: blue;">¿Vaciar Coleccion '{{collection}}'?</h3>
+          <h3 class="info">¿Vaciar Coleccion '{{collection}}'?</h3>
         {% endif %}
       </tr>
       <tr>

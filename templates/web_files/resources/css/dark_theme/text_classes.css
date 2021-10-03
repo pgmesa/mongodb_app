@@ -1,0 +1,73 @@
+
+/* Para mensajes */
+.info {
+    color: blue;
+}
+.success {
+    color: rgb(43, 207, 43);
+}
+.error {
+    color: rgb(253, 104, 104);
+}
+.warning {
+    color: orange;
+}
+
+/* Para las cosas de la aplicacion y de fuera de la app */
+.not_from_app {
+    color: rgb(253, 104, 104);
+}
+.from_app {
+    color: rgb(107, 230, 230);
+}
+
+/* Para los links del navegador */
+.nav_option {
+    color: grey;
+}
+.nav_goback {
+    color: rgb(107, 230, 230);
+}
+
+/* Para el color de las contraseñas desbloqueadas */
+.unlocked_pw {
+    color: grey;
+}
+.encrypted_info {
+    white-space: pre-wrap; 
+    word-break: break-all; 
+    color: blue;
+}
+
+/* Para el color de los indices */
+.index {
+    color: black;
+}
+
+/* Para el color de los atributos */
+.attr_name {
+    color: rgb(107, 230, 230);
+}
+.attr_type {
+    color: rgb(155, 154, 154);
+}
+
+/* Para las stats */
+.stats {
+    color: rgb(43, 207, 43);
+}
+
+/* Para cuadrados de filter y sort activos */
+.active_filter_border {
+    border: 2px solid orange;
+    padding: 1px 5px;
+}
+.active_filter {
+    color: orange;
+}
+
+/* Mensaje de si mostrar solo las db|collections de la aplicacion */
+.show_app_only_msg {
+    color: orange;
+}
+

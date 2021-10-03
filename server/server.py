@@ -89,6 +89,24 @@ def _parse_doc_attrs(model:dict, doc:dict, filter_=False) -> dict:
 
 def _view_inspector(func):
     def view_inspector(*args, **kwargs) -> HttpResponse:
+        # Checkear si se ha cambiado el tema  y si si, redirigir a misma view en la que estabamos
+        # request.POST
+        request:HttpRequest = args[0]
+        theme_form = _clean_form(request.POST)
+        print(theme_form)
+        if bool(theme_form) and "toggle_theme" in theme_form:
+            # Cambiamos tema
+            theme = register.load("theme")
+            if theme is None:
+                theme = 'light'
+                register.add('theme', theme)
+            if theme == 'light':
+                theme = 'dark'
+            elif theme == 'dark':
+                theme = 'light'
+            register.update('theme', theme)
+            print(theme)
+        # -----------------------------------------------------
         view_params = register.load('view_params')
         if view_params is None:
             view_params = {"last_view": None, "redirected": False}
@@ -105,14 +123,14 @@ def _view_inspector(func):
             return func(*args, **kwargs)
         except NotInstalledError as err:
             err_msg = f"ERROR: {err}"
-            dic = {"err_msg": err_msg, "conserv_format": True, "failed_path": args[0].path_info}
+            dic = {"err_msg": err_msg, "conserv_format": True, "failed_path": request.path_info}
             _set_extra_vars(dic, 'error')
             return HttpResponseRedirect('/error/')
         except ServerSelectionTimeoutError as err:
             err_msg = (f"Fallo al conectarse a la base de datos " +
             f"(HOST={dbc.HOST}, PORT={dbc.PORT}), conexión rechazada " +
             f"--> MENSAJE DE ERROR:\n\n({str(err)})")
-            dic = {"err_msg": err_msg, "conserv_format": True, "failed_path": args[0].path_info}
+            dic = {"err_msg": err_msg, "conserv_format": True, "failed_path": request.path_info}
             _set_extra_vars(dic, 'error')
             return HttpResponseRedirect('/error/')
         # except Exception as err:
@@ -142,7 +160,7 @@ def _order_lists(list_to_order:list, order_list:list) -> list:
     return ordered_list
 
 config_keys = [
-    "extra_vars", "view_params", "tasks", "github", "hide_dbs", "autocomplete"
+    "extra_vars", "view_params", "tasks", "github", "hide_dbs", "autocomplete", "theme"
 ]
 
 def _modify_data(name:str, copy_to_name:str=None, delete:bool=False):

@@ -1,0 +1,19 @@
+
+.button {
+    font-size: 23px;
+    background-color:white;
+    box-shadow: black 1px 1px 1px;
+    font-weight: bold;
+    padding: 2px 7px;
+    margin-top: 3px;
+    border-radius: 5px;
+    border-color: white;
+}
+
+.img_button {
+    background-color:white;
+    box-shadow: black 1px 1px 1px;
+    padding: 2%;
+    border-radius: 5px;
+    border-color: white;
+}

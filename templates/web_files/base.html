@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html>
-    {% load static %}
+    {% load static %} {% load custom_filters %}
   <head>
     <meta charset="utf-8">
     <meta name="author" content="Pablo García Mesa"> 
@@ -8,12 +8,30 @@
     <link rel="icon" href="{% static 'icons/mongodb.ico' %}">
     <!-- Para incluir esta plamtilla hay que poner el dir de plantillas
     en los settings.py de django (TEMPLATES.DIRS)-->
-    <link rel="stylesheet" href="{% static 'css/general_design.css' %}">
-    <link rel="stylesheet" href="{% static 'css/home_content_table.css' %}">
-    <link rel="stylesheet" href="{% static 'css/buttons.css' %}">
-    <link rel="stylesheet" href="{% static 'css/links.css' %}">
-    <link rel="stylesheet" href="{% static 'css/selects.css' %}">
-    <link rel="stylesheet" href="{% static 'css/inputs.css' %}">
+    {% if 'light'|is_theme %}
+      <link rel="stylesheet" href="{% static 'css/light_theme/general_design.css' %}">
+      <link rel="stylesheet" href="{% static 'css/light_theme/buttons.css' %}">
+      <link rel="stylesheet" href="{% static 'css/light_theme/links.css' %}">
+      <link rel="stylesheet" href="{% static 'css/light_theme/selects.css' %}">
+      <link rel="stylesheet" href="{% static 'css/light_theme/inputs.css' %}">
+      <link rel="stylesheet" href="{% static 'css/light_theme/text_classes.css' %}">
+      <link rel="stylesheet" href="{% static 'css/light_theme/toggle_switch.css' %}">
+    {% elif 'dark'|is_theme %}
+      <link rel="stylesheet" href="{% static 'css/dark_theme/general_design.css' %}">
+      <link rel="stylesheet" href="{% static 'css/dark_theme/buttons.css' %}">
+      <link rel="stylesheet" href="{% static 'css/dark_theme/links.css' %}">
+      <link rel="stylesheet" href="{% static 'css/dark_theme/selects.css' %}">
+      <link rel="stylesheet" href="{% static 'css/dark_theme/inputs.css' %}">
+      <link rel="stylesheet" href="{% static 'css/dark_theme/text_classes.css' %}">
+      <link rel="stylesheet" href="{% static 'css/dark_theme/toggle_switch.css' %}">
+    {% endif %}
+
+    <script>
+      function change_theme() {
+        let theme_form = document.getElementById("theme_form");
+        theme_form.submit();
+      }
+    </script>
   </head>
 
   <body>
@@ -30,13 +48,35 @@
           </td>
         </tr>
       </table>
+      <table style="margin: auto;">
+        <tr>
+          <td>Theme:  </td>
+          <td>
+            <label class="switch">
+              <form action="" method="POST" id="theme_form">
+                {% csrf_token %}
+                <input type="checkbox" onclick="change_theme();" {% if 'dark'|is_theme %}checked{% endif %}>
+                <span class="slider round"></span>
+                <input type="submit" name="toggle_theme" value="True">
+              </form>
+            </label>
+          </td>
+          <td style="padding-left: 5px;">
+            {% if 'dark'|is_theme %}
+              <img src="{% static 'icons/moon.ico' %}" width="35px" height="35px" alt="Dark Theme">
+            {% elif 'light'|is_theme %}
+              <img src="{% static 'icons/sun.ico' %}" width="35px" height="35px" alt="Light Theme">
+            {% endif %}
+          </td>
+        </tr>
+      </table>
     </header>
 
     <nav>
       <table>
         <tr>
           <td style="padding: 0 10px;">
-            <a href="{% url 'home' %}">Home</a>
+            <a class="nav_goback" href="{% url 'home' %}">Home</a>
           </td>
           {% block td_nav %}
           {% endblock %}
@@ -55,28 +95,28 @@
             <table style="width: 100%;">
               {% if msg %}
                 {% if conserv_format %}
-                  <pre style="white-space: pre-wrap; word-break: break-all;"><h3 style="color: green;">{{msg}}</h3></pre>
+                  <pre style="white-space: pre-wrap; word-break: break-all;"><h3 class="success">{{msg}}</h3></pre>
                 {% else %}
                   <tr>
-                    <td style="color: green; font-size: 20px;"><h3>{{msg}}</h3></td>
+                    <td class="success" style="font-size: 20px;"><h3>{{msg}}</h3></td>
                   </tr>
                 {% endif %}
               {% endif %}
               {% if warning %}
                 {% if conserv_format %}
-                  <pre style="white-space: pre-wrap; word-break: break-all;"><h3 style="color: orange;">WARNING: {{warning}}</h3></pre>
+                  <pre style="white-space: pre-wrap; word-break: break-all;"><h3 class="warning">WARNING: {{warning}}</h3></pre>
                 {% else %}
                   <tr>
-                    <td style="color: orange; font-size: 20px;"><h3>WARNING: {{warning}}</h3></td>
+                    <td class="warning" style="font-size: 20px;"><h3>WARNING: {{warning}}</h3></td>
                   </tr>
                 {% endif %}
               {% endif %}
               {% if err_msg %}
                 {% if conserv_format %}
-                  <pre style="white-space: pre-wrap; word-break: break-all;"><h3 style="color: red;">{{err_msg}}</h3></pre>
+                  <pre style="white-space: pre-wrap; word-break: break-all;"><h3 class="error">{{err_msg}}</h3></pre>
                 {% else %}
                   <tr>
-                    <td style="color: red; font-size: 20px;"><h3>{{err_msg}}</h3></td>
+                    <td class="error" style="font-size: 20px;"><h3>{{err_msg}}</h3></td>
                   </tr>
                 {% endif %}
               {% endif %}

@@ -32,3 +32,10 @@ def get_type(tp:str):
     if tp == 'password':
         return 'password'
     return 'text'
+
+@register.filter
+def is_theme(theme:str):
+    real_theme = reg.load("theme")
+    if (real_theme is None and theme == 'light') or theme == real_theme:
+        return True
+    return False
