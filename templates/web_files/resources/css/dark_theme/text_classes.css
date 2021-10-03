@@ -1,7 +1,7 @@
 
 /* Para mensajes */
 .info {
-    color: blue;
+    color: rgb(107, 230, 230);
 }
 .success {
     color: rgb(43, 207, 43);
@@ -15,7 +15,7 @@
 
 /* Para las cosas de la aplicacion y de fuera de la app */
 .not_from_app {
-    color: rgb(253, 104, 104);
+    color: rgb(156, 156, 156);
 }
 .from_app {
     color: rgb(107, 230, 230);
@@ -36,12 +36,12 @@
 .encrypted_info {
     white-space: pre-wrap; 
     word-break: break-all; 
-    color: blue;
+    color: rgb(107, 230, 230);
 }
 
 /* Para el color de los indices */
 .index {
-    color: black;
+    color: rgb(155, 154, 154);;
 }
 
 /* Para el color de los atributos */
@@ -59,15 +59,15 @@
 
 /* Para cuadrados de filter y sort activos */
 .active_filter_border {
-    border: 2px solid orange;
+    border: 2px solid rgb(245, 189, 86);
     padding: 1px 5px;
 }
 .active_filter {
-    color: orange;
+    color: rgb(245, 189, 86);
 }
 
 /* Mensaje de si mostrar solo las db|collections de la aplicacion */
 .show_app_only_msg {
-    color: orange;
+    color: rgb(245, 189, 86);
 }
 

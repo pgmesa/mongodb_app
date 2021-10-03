@@ -15,7 +15,7 @@
 
 /* Para las cosas de la aplicacion y de fuera de la app */
 .not_from_app {
-    color: red;
+    color: grey;
 }
 .from_app {
     color: hsl(213, 98%, 52%);

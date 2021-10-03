@@ -132,12 +132,12 @@
               </td>
             {% endfor %}
             <td>
-              <button type="submit" class="button" style="padding: 1px 3px; margin: 0;" name="tick">
+              <button type="submit" class="img_button" style="padding: 1px 3px; margin: 0;" name="tick">
                 <img src="{% static 'icons/tick.ico' %}" alt="Tick" width="35px" height="35px">
               </button>
             </td>
             <td>
-              <button type="submit" class="button" style="padding: 1px 3px; margin: 0;" name="bin">
+              <button type="submit" class="img_button" style="padding: 1px 3px; margin: 0;" name="bin">
                 <img src="{% static 'icons/delete2.ico' %}" alt="Tick" width="35px" height="35px">
               </button>
             </td>
@@ -242,7 +242,7 @@
         <tr>
           <td style="padding: 0 5px;">
             <form action="/display/{{db}}/{{collection}}" method="GET">
-              <button type="submit" class="button" style="padding: 1px 3px; margin: 0;" name="show_more" value="{{num}}">
+              <button type="submit" class="img_button" style="padding: 1px 3px; margin: 0;" name="show_more" value="{{num}}">
                 <img src="{% static 'icons/add.ico' %}" alt="show_more" width="25px" height="25px">
               </button>
             </form>

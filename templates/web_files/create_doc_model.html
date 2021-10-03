@@ -23,12 +23,12 @@
       {% for attr, attr_dict in model.items %}
         <tr>
           <td>
-            <button type="submit" class="button" style="padding: 1px 3px; margin: 0;" name="down" value="{{attr}}">
+            <button type="submit" class="img_button" style="padding: 1px 3px; margin: 0;" name="down" value="{{attr}}">
               <img src="{% static 'icons/down_arrow.ico' %}" alt="Down" width="25px" height="25px">
             </button>
           </td>
           <td>
-            <button type="submit" class="button" style="padding: 1px 3px; margin: 0;" name="up" value="{{attr}}">
+            <button type="submit" class="img_button" style="padding: 1px 3px; margin: 0;" name="up" value="{{attr}}">
               <img src="{% static 'icons/up_arrow.ico' %}" alt="Up" width="25px" height="25px">
             </button>
           </td>
@@ -54,7 +54,7 @@
             </td>
           {% endif %}
           <td>
-            <button type="submit" class="button" style="padding: 1px 3px; margin: 0;" name="remove" value="{{attr}}">
+            <button type="submit" class="img_button" style="padding: 1px 3px; margin: 0;" name="remove" value="{{attr}}">
               <img src="{% static 'icons/delete.ico' %}" alt="remove" width="25px" height="25px">
             </button>
           </td>
@@ -65,7 +65,7 @@
           <td>
             <table style="width: 100%;">
               <td style="text-align: left;">
-                <button type="submit" class="button" style="padding: 1px 3px; margin: 0;" name="add"> 
+                <button type="submit" class="img_button" style="padding: 1px 3px; margin: 0;" name="add"> 
                   <img src="{% static 'icons/add.ico' %}" alt="add" width="25px" height="25px">
                 </button>
               </td>  

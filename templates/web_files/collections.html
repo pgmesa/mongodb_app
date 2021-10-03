@@ -19,7 +19,7 @@
       <td style="padding-top: 5px;">
         <form action="/display/{{db}}" method="POST">
           {% csrf_token %}
-          <button type="submit" class="button" style="padding: 1px 3px; margin: 0;" name="hidden" value="{{hide}}">
+          <button type="submit" class="img_button" style="padding: 1px 3px; margin: 0;" name="hidden" value="{{hide}}">
             <img src="{% static 'icons/eye.ico' %}" alt="hide" width="35px" height="35px">
           </button>
         </form>
@@ -40,12 +40,12 @@
             <form action="/display/{{db}}" method="POST">
               {% csrf_token %}
               <td>
-                <button type="submit" class="button" style="padding: 1px 3px; margin: 0;" name="down" value="{{collection}}">
+                <button type="submit" class="img_button" style="padding: 1px 3px; margin: 0;" name="down" value="{{collection}}">
                   <img src="{% static 'icons/down_arrow.ico' %}" alt="Down" width="25px" height="25px">
                 </button>
               </td>
               <td>
-                <button type="submit" class="button" style="padding: 1px 3px; margin: 0;" name="up" value="{{collection}}">
+                <button type="submit" class="img_button" style="padding: 1px 3px; margin: 0;" name="up" value="{{collection}}">
                   <img src="{% static 'icons/up_arrow.ico' %}" alt="Up" width="25px" height="25px">
                 </button>
               </td>
