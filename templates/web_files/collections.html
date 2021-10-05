@@ -35,7 +35,7 @@
   <table style="margin: auto;">
     {% if db_collections %}
       {% for collection in db_collections %}
-        <tr>
+        <tr {% if collection == id_to_scroll %}class="selected_row"{% endif %}>
           {% if not hide %}
             <form action="/display/{{db}}" method="POST">
               {% csrf_token %}
@@ -52,28 +52,29 @@
             </form>
           {% endif %}
           {% if collection in app_db_collections %}
-            <td style="text-align: left; padding: 0px 15px;">
+            <td style="text-align: left; padding: 10px 15px;">
               <ul style="list-style-position: inside;">
                 <li><a class="from_app" href="/display/{{db}}/{{collection}}">{{collection}}</a></li>
               </ul>
             </td>
+            <td style="padding-right:10px;">
+              <form action="/duplicate/{{db}}/{{collection}}" method="GET">
+                <button type="submit" class="img_button">
+                  <img src="{% static 'icons/duplicate.ico' %}" 
+                      alt="duplicate" width="35px" height="35px">
+                </button>
+              </form>
+            </td>
           {% else %}
-            <td style="text-align: left; padding: 0px 15px;">
+            <td style="text-align: left; padding: 10px 15px;">
               <ul style="list-style-position: inside;">
                 <li>
                   <a class="not_from_app" href="/display/{{db}}/{{collection}}">{{collection}}</a>
                 </li>
               </ul>
             </td>
+            <td></td>
           {% endif %}
-          <td style="padding-right:10px;">
-            <form action="/duplicate/{{db}}/{{collection}}" method="GET">
-              <button type="submit" class="img_button">
-                <img src="{% static 'icons/duplicate.ico' %}" 
-                    alt="duplicate" width="35px" height="35px">
-              </button>
-            </form>
-          </td>
           <td style="padding-right:10px;">
             <form action="/update/{{db}}/{{collection}}" method="GET">
               <button type="submit" class="img_button">

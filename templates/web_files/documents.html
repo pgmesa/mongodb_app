@@ -167,7 +167,7 @@
         {% endfor %}
       </tr>
       {% for doc in docs %}
-        <tr id="{{forloop.counter}}" {% if forloop.counter == id_to_scroll %}class="updated"{% endif %}>
+        <tr id="{{forloop.counter}}" {% if forloop.counter == id_to_scroll %}class="selected_row"{% endif %}>
           <td class="index">{{forloop.counter}}.</td>
           {% for attr_dict in model.values %}
             <td style="padding: 10px;">

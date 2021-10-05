@@ -260,6 +260,7 @@ def home(request:HttpRequest) -> HttpResponse:
                 if new_index >= 0:
                     dbs.pop(index)
                     dbs.insert(index-1, db)
+                context_dict["id_to_scroll"] = db
             elif "down" in post_dict:
                 db = post_dict.pop("down")
                 index = dbs.index(db)
@@ -267,6 +268,7 @@ def home(request:HttpRequest) -> HttpResponse:
                 if new_index < len(dbs):
                     dbs.pop(index)
                     dbs.insert(index+1, db)
+                context_dict["id_to_scroll"] = db
             register.update('dbs_order', dbs)    
         # Miramos a ver si hay que ocultar las bbdd que no sean de la app
         hidde_form = _clean_form(request.POST)
@@ -327,6 +329,7 @@ def add_db(request:HttpRequest) -> HttpResponse:
 
 @_view_inspector
 def duplicate_db(request:HttpRequest, db:str) -> HttpResponse:
+    _set_extra_vars({"id_to_scroll": db}, 'home')
     i = 1; cp_name = db + f"({i})"
     db_names = dbc.list_dbs()
     while cp_name in db_names:
@@ -350,6 +353,7 @@ def duplicate_db(request:HttpRequest, db:str) -> HttpResponse:
 
 @_view_inspector
 def update_db(request:HttpRequest, db:str) -> HttpResponse:
+    _set_extra_vars({"id_to_scroll": db}, 'home')
     context_dict = {"db": db}
     form_dict = request.POST.dict()
     if bool(form_dict):
@@ -386,6 +390,7 @@ def update_db(request:HttpRequest, db:str) -> HttpResponse:
 
 @_view_inspector
 def delete_db(request:HttpRequest, db:str) -> HttpResponse:
+    _set_extra_vars({"id_to_scroll": db}, 'home')
     context_dict = {"db": db}; conf_dict = _clean_form(request.POST)
     if bool(conf_dict): 
         if "yes" in conf_dict:
@@ -449,6 +454,7 @@ def display_collections(request:HttpRequest, db:str) -> HttpResponse:
                 if new_index >= 0:
                     collections.pop(index)
                     collections.insert(index-1, collection)
+                context_dict["id_to_scroll"] = collection
             elif "down" in post_dict:
                 collection = post_dict.pop("down")
                 index = collections.index(collection)
@@ -456,6 +462,7 @@ def display_collections(request:HttpRequest, db:str) -> HttpResponse:
                 if new_index < len(collections):
                     collections.pop(index)
                     collections.insert(index+1, collection)
+                context_dict["id_to_scroll"] = collection
             register.update('db_collec_orders', collections, override=False, dict_id=db)
         # Miramos a ver si hay que ocultar las colecciones que no sean de la app
         hidde_form = _clean_form(request.POST)
@@ -665,6 +672,7 @@ def create_doc_model(request:HttpRequest, db:str, collection:str) -> HttpRespons
 
 @_view_inspector
 def duplicate_collection(request:HttpRequest, db:str, collection:str) -> HttpResponse:
+    _set_extra_vars({"id_to_scroll": collection}, 'display_collections')
     collections = dbc.list_collections(db)
     i = 1; cp_name = collection + f"({i})"
     while cp_name in collections:
@@ -686,6 +694,7 @@ def duplicate_collection(request:HttpRequest, db:str, collection:str) -> HttpRes
 
 @_view_inspector
 def update_collection(request:HttpRequest, db:str, collection:str) -> HttpResponse:
+    _set_extra_vars({"id_to_scroll": collection}, 'display_collections')
     context_dict = {"db": db, "collection": collection}
     form_dict = request.POST.dict()
     if bool(form_dict):
@@ -717,6 +726,7 @@ def update_collection(request:HttpRequest, db:str, collection:str) -> HttpRespon
 
 @_view_inspector
 def delete_collection(request:HttpRequest, db:str, collection:str) -> HttpResponse:
+    _set_extra_vars({"id_to_scroll": collection}, 'display_collections')
     context_dict = {"db": db, "collection": collection}
     conf_dict = _clean_form(request.POST)
     if bool(conf_dict): 
@@ -1022,7 +1032,9 @@ def display_documents(request:HttpRequest, db:str, collection:str, extra_vars:di
         num = 20; context_dict["show_more"] = True
         form_dict = _clean_form(request.GET); docs_len = len(docs)
         if "show_more" in form_dict:
-            num = int(form_dict["show_more"]) + 10
+            actual_num = form_dict["show_more"]
+            context_dict["id_to_scroll"] = actual_num
+            num = int(actual_num) + 10
         if num >= docs_len: 
             num = docs_len
             context_dict.pop("show_more")

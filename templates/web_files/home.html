@@ -37,7 +37,7 @@
   <table style="margin: auto;">
     {% if dbs %}
       {% for db in dbs %}
-        <tr>
+        <tr {% if db == id_to_scroll %}class="selected_row"{% endif %}>
           {% if not hide %}
             <form action="/" method="POST">
               {% csrf_token %}
@@ -54,26 +54,27 @@
             </form>
           {% endif %}
           {% if db in app_dbs %}
-            <td style="text-align: left; padding: 0px 15px;">
+            <td style="text-align: left; padding: 10px 15px;">
               <ul style="list-style-position: inside;">
-                <li><a href="/display/{{db}}" class="from_app">{{db}}</a></li>
+                <li><a href="/display/{{db}}" class="from_app" id="{{db}}">{{db}}</a></li>
               </ul>
+            </td>
+            <td style="padding-right:10px;">
+              <form action="/duplicate/{{db}}" method="GET">
+                <button type="submit" class="img_button">
+                  <img src="{% static 'icons/duplicate.ico' %}" 
+                      alt="duplicate" width="35px" height="35px">
+                </button>
+              </form>
             </td>
           {% else %}
-            <td style="text-align: left; padding: 0px 15px;">
+            <td style="text-align: left; padding: 10px 15px;">
               <ul style="list-style-position: inside;">
-                <li><a href="/display/{{db}}" class="not_from_app">{{db}}</a></li>
+                <li><a href="/display/{{db}}" class="not_from_app" id="{{db}}">{{db}}</a></li>
               </ul>
             </td>
+            <td></td>
           {% endif %}
-          <td style="padding-right:10px;">
-            <form action="/duplicate/{{db}}" method="GET">
-              <button type="submit" class="img_button">
-                <img src="{% static 'icons/duplicate.ico' %}" 
-                    alt="duplicate" width="35px" height="35px">
-              </button>
-            </form>
-          </td>
           <td style="padding-right:10px;">
             <form action="/update/{{db}}" method="GET">
               <button type="submit" class="img_button">
