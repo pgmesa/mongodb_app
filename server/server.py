@@ -329,12 +329,12 @@ def add_db(request:HttpRequest) -> HttpResponse:
 
 @_view_inspector
 def duplicate_db(request:HttpRequest, db:str) -> HttpResponse:
-    _set_extra_vars({"id_to_scroll": db}, 'home')
     i = 1; cp_name = db + f"({i})"
     db_names = dbc.list_dbs()
     while cp_name in db_names:
         i += 1
         cp_name = db + f"({i})"
+    _set_extra_vars({"id_to_scroll": cp_name}, 'home')
     collections = dbc.list_collections(db, only_app_coll=True)
     for collection in collections:
         docs = dbc.get_documents(db, collection, with_app_format=False)
@@ -672,12 +672,12 @@ def create_doc_model(request:HttpRequest, db:str, collection:str) -> HttpRespons
 
 @_view_inspector
 def duplicate_collection(request:HttpRequest, db:str, collection:str) -> HttpResponse:
-    _set_extra_vars({"id_to_scroll": collection}, 'display_collections')
     collections = dbc.list_collections(db)
     i = 1; cp_name = collection + f"({i})"
     while cp_name in collections:
         i += 1
         cp_name = collection + f"({i})"
+    _set_extra_vars({"id_to_scroll": cp_name}, 'display_collections')
     docs = dbc.get_documents(db, collection, with_app_format=False)
     model = None
     for doc in docs:
