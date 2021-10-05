@@ -47,14 +47,25 @@ def _set_extra_vars(view_extra_vars:dict, view_name:str) -> None:
                 extra_vars[view_name][var] = value
         register.update("extra_vars", extra_vars)
             
-def _parse_doc_attrs(model:dict, doc:dict, filter_=False) -> dict:
+def _parse_doc_attrs(actual_model:dict, doc:dict, filter_=False, new_model:dict=None) -> dict:
     parsed_doc = copy.deepcopy(doc)
-    for attr_dict in model.values():
+    model = actual_model
+    if new_model is not None:
+        model = new_model
+    for attr, attr_dict in model.items():
         name = attr_dict["name"]; str_type = attr_dict["type"]
         try:
             value = doc[name]
         except KeyError:
-            continue
+            # Se ha modificado el nombre del atributo
+            if attr in actual_model:
+                old_name = actual_model[attr]["name"]
+                value = doc[old_name]
+            else:
+                # Si no esta es que se ha eliminado el atributo y no hay que parsear nada, se van a 
+                # eliminar los datos de ese atributo en cada documento
+                continue
+                    
         if value == "" or value == "-": 
             if not filter_:
                 parsed_doc[name] = "-"
@@ -645,7 +656,7 @@ def create_doc_model(request:HttpRequest, db:str, collection:str) -> HttpRespons
                 docs = dbc.get_documents(db, collection)
                 for doc in docs:
                     try:   
-                        doc = _parse_doc_attrs(valid_model, doc)
+                        doc = _parse_doc_attrs(ex_model, doc, new_model=valid_model)
                     except Exception as err:
                         err_msg = f"""No todos los documentos pueden ser parseados.
                         El documento con id '{doc["id"]}' ha fallado en la conversion 
