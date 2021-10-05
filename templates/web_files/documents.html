@@ -167,7 +167,7 @@
         {% endfor %}
       </tr>
       {% for doc in docs %}
-        <tr>
+        <tr id="{{forloop.counter}}" {% if forloop.counter == id_to_scroll %}class="updated"{% endif %}>
           <td class="index">{{forloop.counter}}.</td>
           {% for attr_dict in model.values %}
             <td style="padding: 10px;">
@@ -180,7 +180,7 @@
                     <td style="width: 1%; padding-left: 10px;">
                       <form action="/display/{{db}}/{{collection}}" method="POST">
                         {% csrf_token %}
-                        <button type="submit" class="img_button" name="lock" value="{{doc|lookup:attr_dict.name}}">
+                        <button type="submit" class="img_button" name="lock" value="{{doc|lookup:'id'}}">
                           <img src="{% static 'icons/lock.ico' %}"
                               alt="Lock" width="35px" height="35px">
                         </button>
@@ -204,10 +204,10 @@
               {% else %}
                 <div style="white-space: pre-wrap;">{{doc|lookup:attr_dict.name}}</div>
               {% endif %}
-            </td> 
+            </td>
           {% endfor %}
           <td style="padding-right:10px;">
-            <form action="/duplicate/{{db}}/{{collection}}/{{doc.id}}" method="GET">
+            <form action="/duplicate/{{db}}/{{collection}}/{{doc.id}}--{{forloop.counter}}" method="GET">
               <button type="submit" class="img_button">
                 <img src="{% static 'icons/duplicate.ico' %}" 
                     alt="duplicate" width="35px" height="35px">
@@ -215,14 +215,14 @@
             </form>
           </td>
           <td style="padding: 0 5px;">
-            <form action="/update/{{db}}/{{collection}}/{{doc.id}}" method="GET">
+            <form action="/update/{{db}}/{{collection}}/{{doc.id}}--{{forloop.counter}}" method="GET">
               <button type="submit" class="img_button">
                 <img src="{% static 'icons/edit.ico' %}" alt="update" width="35px" height="35px">
               </button>
             </form>
           </td>
           <td style="padding: 0 5px;">
-            <form action="/delete/{{db}}/{{collection}}/{{doc.id}}" method="GET">
+            <form action="/delete/{{db}}/{{collection}}/{{doc.id}}--{{forloop.counter}}" method="GET">
               <button type="submit" class="img_button">
                 <img src="{% static 'icons/delete.ico' %}" alt="delete" width="35px" height="35px">
               </button>
@@ -232,7 +232,7 @@
       {% endfor %}
     {% else %}
       {% for doc in docs %}
-        <tr>
+        <tr id="{{forloop.counter}}">
           <td style="text-align: left;">
             <pre style="white-space: pre-wrap; word-break: break-all;"><div class="index">{{forloop.counter}}:</div> {{doc}}</pre>
           </td>

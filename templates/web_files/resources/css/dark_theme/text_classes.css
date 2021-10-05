@@ -71,3 +71,7 @@
     color: rgb(245, 189, 86);
 }
 
+/* Color para el borde de las filas modificadas/eliminadas */
+.updated {
+    border: 2px solid rgb(245, 189, 86);
+}

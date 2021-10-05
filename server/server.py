@@ -2,6 +2,7 @@
 import json
 import copy
 from contextlib import suppress
+from re import split
 from pymongo.errors import ServerSelectionTimeoutError
 # django imports
 from django.http import HttpResponse, HttpRequest, HttpResponseRedirect
@@ -233,6 +234,7 @@ def home(request:HttpRequest) -> HttpResponse:
     dbs = dbc.list_dbs()
     app_dbs = dbc.list_dbs(only_app_dbs=True)    
     context_dict["dbs"] = dbs
+    context_dict["change_theme"] = True
 
     if not bool(dbs):
         err_msg = "No hay bases de datos creadas, MongoDB esta vacío"
@@ -414,6 +416,7 @@ def display_collections(request:HttpRequest, db:str) -> HttpResponse:
     collections = dbc.list_collections(db)
     app_collections = dbc.list_collections(db, only_app_coll=True)
     context_dict["db_collections"] = collections
+    context_dict["change_theme"] = True
     
     if not bool(collections):
         err_msg = "No existen colecciones en esta base de datos"
@@ -737,6 +740,15 @@ def delete_collection(request:HttpRequest, db:str, collection:str) -> HttpRespon
 # -------------------------- DOCUMENT VIEWS --------------------------
 @_view_inspector
 def validate_key(request:HttpRequest, db:str, collection:str, doc_id:str, attr:str):
+    if "--" in doc_id:
+        doc_index = ""
+        for i, num in enumerate(doc_id[::-1]):
+            if num == "-":
+                doc_index = int(doc_index[::-1])
+                doc_id = doc_id[:len(doc_id)-i-2]
+                break
+            doc_index += str(num)
+        _set_extra_vars({"id_to_scroll": doc_index} ,'display_documents')
     doc = dbc.find_doc_by_id(db, collection, doc_id)
     encrypted = doc[attr]
     context_dict = {"db": db, "collection": collection}
@@ -801,14 +813,19 @@ def validate_key(request:HttpRequest, db:str, collection:str, doc_id:str, attr:s
                 context_dict["encryption_info"] = info
             
             context_dict["attempt"] = passed_key
-            
-            
-    _set_extra_vars(context_dict, 'validate_key')
+    
+    recycle_context = copy.deepcopy(context_dict)  
+    func_params = ["db", "collection", "doc_id", "attr"]   
+    for param in func_params:
+        if param in recycle_context:
+            recycle_context.pop(param)
+    _set_extra_vars(recycle_context, 'validate_key')
     return render(request, 'validate_key.html', context_dict)
 
 @_view_inspector
 def display_documents(request:HttpRequest, db:str, collection:str, extra_vars:dict={}) -> HttpResponse:
     context_dict = {"db": db, "collection": collection}
+    context_dict["change_theme"] = True
     # Checkeamos si hay existe o es valido el archivo secret_key.py
     secret_file, check_msg = _check_secret_file()
     if not secret_file:
@@ -943,7 +960,6 @@ def display_documents(request:HttpRequest, db:str, collection:str, extra_vars:di
                 continue
             break  
         if key is not None:
-            
             if target_doc is not None:
                 try:
                     decrypted = decrypt(enc_pw, seed, key, mode)
@@ -959,12 +975,22 @@ def display_documents(request:HttpRequest, db:str, collection:str, extra_vars:di
         elif secret_file:
             _set_extra_vars({'display_view': True}, 'validate_key')
             target_doc_id = target_doc["id"]
-            return HttpResponseRedirect(f'/validate/{db}/{collection}/{target_doc_id}/{target_attr}')
+            if type(docs) is dict:
+                index = 1
+            elif type(docs) is list:
+                index = docs[::-1].index(target_doc) + 1
+            return HttpResponseRedirect(f'/validate/{db}/{collection}/{target_doc_id}--{index}/{target_attr}')
         else:
             msg = "Es necesario un fichero 'server/secret_key.py' para "
             msg += f"desbloquear la contraseña '{enc_pw}'"
             context_dict["err_msg"] = msg
-            
+    elif "lock" in unlock_form:
+        doc_id = unlock_form.pop('lock')
+        for i, doc in enumerate(docs[::-1]):
+            if doc["id"] == doc_id:
+                index = i
+        context_dict["id_to_scroll"] = index + 1
+        
     # Mostramos los documentos segun si hay o no hay modelo establecido
     model_doc = dbc.get_model(db, collection)
     context_dict["model"] = model_doc
@@ -1105,6 +1131,16 @@ def add_document(request:HttpRequest, db:str, collection:str) -> HttpResponse:
 
 @_view_inspector
 def duplicate_document(request:HttpRequest, db:str, collection:str, doc_id:str) -> HttpResponse:
+    if "--" in doc_id:
+        doc_index = ""
+        for i, num in enumerate(doc_id[::-1]):
+            if num == "-":
+                doc_index = int(doc_index[::-1])
+                doc_id = doc_id[:len(doc_id)-i-2]
+                break
+            doc_index += str(num)
+        print(doc_index)
+        _set_extra_vars({"id_to_scroll": doc_index} ,'display_documents')
     docs = dbc.get_documents(db, collection, with_app_format=False)
     for doc in docs:
         if doc["_id"] == "model" or doc["_id"] == "passwords": continue
@@ -1122,11 +1158,21 @@ def duplicate_document(request:HttpRequest, db:str, collection:str, doc_id:str) 
                 
         dbc.add_document(db, collection, doc)
     
+    _set_extra_vars({"msg": f"Documento con id '{doc_id}' duplicado con exito"}, 'display_documents')
     return HttpResponseRedirect(f'/display/{db}/{collection}')
 
 
 @_view_inspector
 def update_document(request:HttpRequest, db:str, collection:str, doc_id:str) -> HttpResponse:
+    if "--" in doc_id:
+        doc_index = ""
+        for i, num in enumerate(doc_id[::-1]):
+            if num == "-":
+                doc_index = int(doc_index[::-1])
+                doc_id = doc_id[:len(doc_id)-i-2]
+                break
+            doc_index += str(num)
+        _set_extra_vars({"id_to_scroll": doc_index} ,'display_documents')        
     secret_file, _ = _check_secret_file()
     context_dict = {"db": db, "collection": collection}
     context_dict["textareas"] = []; context_dict["show_pwds"] = []; context_dict["locked_pwds"] = {}
@@ -1264,6 +1310,15 @@ def update_document(request:HttpRequest, db:str, collection:str, doc_id:str) -> 
 
 @_view_inspector
 def delete_document(request:HttpRequest, db:str, collection:str, doc_id:str) -> HttpResponse:
+    if "--" in doc_id:
+        doc_index = ""
+        for i, num in enumerate(doc_id[::-1]):
+            if num == "-":
+                doc_index = int(doc_index[::-1])
+                doc_id = doc_id[:len(doc_id)-i-2]
+                break
+            doc_index += str(num)
+        _set_extra_vars({"id_to_scroll": doc_index} ,'display_documents')
     doc = dbc.find_doc_by_id(db, collection, doc_id)
     str_doc = json.dumps(doc, indent=4, sort_keys=True)
     context_dict = {"db": db, "collection": collection, "doc_id":doc_id, "doc": str_doc}

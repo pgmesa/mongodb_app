@@ -71,3 +71,7 @@
     color: orange;
 }
 
+/* Color para el borde de las filas modificadas/eliminadas */
+.updated {
+    border: 2px solid orange;
+}

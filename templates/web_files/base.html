@@ -39,11 +39,25 @@
       })
     </script>
 
+    <script>
+      document.addEventListener('DOMContentLoaded', (event) => {
+        const id = "{{id_to_scroll}}"
+        element = document.getElementById(id);
+        let behavior = "auto"
+        // if (id <= 20) {
+        //   behavior = "smooth"
+        // }
+        element.scrollIntoView({"block": "center", "behavior": behavior});
+        //alert(window.scrollY)
+      })
+    </script>
+
+    {% block js %}
+    {% endblock %}
+
   </head>
 
   <body>
-    {% block js %}
-    {% endblock %}
     <header>
       <table style="margin: auto;">
         <tr>
@@ -55,31 +69,33 @@
           </td>
         </tr>
       </table>
-      <table style="margin: auto;">
-        <tr>
-          <td>Theme:  </td>
-          <td>
-            <label class="switch">
-              <form action="" method="POST" id="theme_form">
-                {% csrf_token %}
-                <input type="checkbox" id="slider" name="toggle_theme" {% if 'dark'|is_theme %}checked{% endif %}>
-                <span class="slider round"></span>
-              </form>
-            </label>
-          </td>
-          <td style="padding-left: 5px;">
-            {% if 'dark'|is_theme %}
-              <img src="{% static 'icons/moon.ico' %}" width="35px" height="35px" alt="Dark Theme">
-            {% elif 'light'|is_theme %}
-              <img src="{% static 'icons/sun.ico' %}" width="35px" height="35px" alt="Light Theme">
-            {% endif %}
-          </td>
-        </tr>
-      </table>
+      {% if change_theme %}
+        <table style="margin: auto;">
+          <tr>
+            <td>Theme:  </td>
+            <td>
+              <label class="switch">
+                <form action="" method="POST" id="theme_form">
+                  {% csrf_token %}
+                  <input type="checkbox" id="slider" name="toggle_theme" {% if 'dark'|is_theme %}checked{% endif %}>
+                  <span class="slider round"></span>
+                </form>
+              </label>
+            </td>
+            <td style="padding-left: 5px;">
+              {% if 'dark'|is_theme %}
+                <img src="{% static 'icons/moon.ico' %}" width="35px" height="35px" alt="Dark Theme">
+              {% elif 'light'|is_theme %}
+                <img src="{% static 'icons/sun.ico' %}" width="35px" height="35px" alt="Light Theme">
+              {% endif %}
+            </td>
+          </tr>
+        </table>
+      {% endif %}
     </header>
 
     <nav>
-      <table>
+      <table style="margin: auto;">
         <tr>
           <td style="padding: 0 10px;">
             <a class="nav_goback" href="{% url 'home' %}">Home</a>
@@ -87,49 +103,52 @@
           {% block td_nav %}
           {% endblock %}
         </tr>
-      </table>
+      </table> 
     </nav>
-    
+
+
+    {% if msg or err_msg or warning %}
+      <nav style="padding-bottom: 1%;" class="msg">
+        {% block msg %}
+          <table style="width: 100%;">
+            {% if msg %}
+              {% if conserv_format %}
+                <pre style="white-space: pre-wrap; word-break: break-all;"><h3 class="success">{{msg}}</h3></pre>
+              {% else %}
+                <tr>
+                  <td class="success" style="font-size: 20px;"><h3>{{msg}}</h3></td>
+                </tr>
+              {% endif %}
+            {% endif %}
+            {% if warning %}
+              {% if conserv_format %}
+                <pre style="white-space: pre-wrap; word-break: break-all;"><h3 class="warning">WARNING: {{warning}}</h3></pre>
+              {% else %}
+                <tr>
+                  <td class="warning" style="font-size: 20px;"><h3>WARNING: {{warning}}</h3></td>
+                </tr>
+              {% endif %}
+            {% endif %}
+            {% if err_msg %}
+              {% if conserv_format %}
+                <pre style="white-space: pre-wrap; word-break: break-all;"><h3 class="error">{{err_msg}}</h3></pre>
+              {% else %}
+                <tr>
+                  <td class="error" style="font-size: 20px;"><h3>{{err_msg}}</h3></td>
+                </tr>
+              {% endif %}
+            {% endif %}
+          </table>
+        {% endblock %}
+        </nav>
+    {% endif %}
+
     <div id="main_content">
       <div style="padding: 1%;">
         {% block h %}
         {% endblock %}
       </div>
-      {% if msg or err_msg or warning %}
-        <div style="padding-bottom: 1%;">
-          {% block msg %}
-            <table style="width: 100%;">
-              {% if msg %}
-                {% if conserv_format %}
-                  <pre style="white-space: pre-wrap; word-break: break-all;"><h3 class="success">{{msg}}</h3></pre>
-                {% else %}
-                  <tr>
-                    <td class="success" style="font-size: 20px;"><h3>{{msg}}</h3></td>
-                  </tr>
-                {% endif %}
-              {% endif %}
-              {% if warning %}
-                {% if conserv_format %}
-                  <pre style="white-space: pre-wrap; word-break: break-all;"><h3 class="warning">WARNING: {{warning}}</h3></pre>
-                {% else %}
-                  <tr>
-                    <td class="warning" style="font-size: 20px;"><h3>WARNING: {{warning}}</h3></td>
-                  </tr>
-                {% endif %}
-              {% endif %}
-              {% if err_msg %}
-                {% if conserv_format %}
-                  <pre style="white-space: pre-wrap; word-break: break-all;"><h3 class="error">{{err_msg}}</h3></pre>
-                {% else %}
-                  <tr>
-                    <td class="error" style="font-size: 20px;"><h3>{{err_msg}}</h3></td>
-                  </tr>
-                {% endif %}
-              {% endif %}
-            </table>
-          {% endblock %}
-          </div>
-      {% endif %}
+      
       <div>
         {% block content %} 
         {% endblock %}

@@ -5,7 +5,7 @@
 
 {% block td_nav %}
   <td style="padding: 0 10px;">
-    <a href="/add/" class="nav_option">Add DataBase</a>
+    <a href="/add/" id="add_db" class="nav_option">Add DataBase</a>
   </td>
 {% endblock %}
 
@@ -27,7 +27,7 @@
         </form>
       </td>
       <td style="padding: 0 5px;">
-        <input type="checkbox" name="hidden_dbs" class="checkbox" onclick="return false;" {% if hide %}checked{% endif %}>
+        <input type="checkbox" name="hidden_dbs" class="checkbox" {% if hide %}checked{% endif %}>
       </td>
     </tr>
   </table>

@@ -22,11 +22,25 @@ header {
     margin-top: 15px;
 }
 
+nav {
+    position: sticky;
+    top: 0;
+}
+
 body {
     font: 16px; 
     font-family: Verdana, Geneva, Tahoma, sans-serif;
     text-align: center;
     font-size: 20px;
+}
+
+.msg {
+    position: sticky;
+    top: 67px;
+}
+
+table {
+    border-collapse: collapse;
 }
 
 #main_content {
