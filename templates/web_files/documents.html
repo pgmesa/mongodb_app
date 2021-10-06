@@ -14,12 +14,15 @@
         let info_div = document.getElementById('info_div');
         let tds = document.getElementsByClassName("changing_td");
         for (let td of tds) {
-          // tdPosition = td.getBoundingClientRect();
-          // height = Math.round(tdPosition.top + tdPosition.height/2)
+          tr_id = td.id;
+          // alert(tr_id)
+          let tr = document.getElementById(tr_id);
+          trPosition = tr.getBoundingClientRect();
+          offset = 20 
+          height = Math.round(trPosition.top + scrollY + trPosition.height/2 - offset)
+          td.style.top = `${height}px`;
           td.style.position = "absolute";
-          // td.style.height = `${height}px`;
         }
-        // info_div.className = "overflowed"
         info_div.style.overflow = "auto";
         info_div.style.marginLeft = "10px";
         info_div.style.marginRight = "150px";
@@ -142,7 +145,7 @@
           {% endfor %}
         </tr>
         {% if numbers %}
-          <tr>
+          <tr id="stats">
             <td></td>
             <form action="/display/{{db}}/{{collection}}" method="POST">
               {% csrf_token %}
@@ -157,12 +160,12 @@
                   {% endif %}
                 </td>
               {% endfor %}
-              <td class="changing_td" style="right: 112px;">
+              <td class="changing_td" style="right: 112px;" id="stats">
                 <button type="submit" class="img_button" style="padding: 1px 3px; margin: 0;" name="tick">
                   <img src="{% static 'icons/tick.ico' %}" alt="Tick" width="35px" height="35px">
                 </button>
               </td>
-              <td class="changing_td" style="right: 63px;">
+              <td class="changing_td" style="right: 63px;" id="stats">
                 <button type="submit" class="img_button" style="padding: 1px 3px; margin: 0;" name="bin">
                   <img src="{% static 'icons/delete2.ico' %}" alt="Tick" width="35px" height="35px">
                 </button>
@@ -232,7 +235,7 @@
                 {% endif %}
               </td>
             {% endfor %}
-            <td style="right: 120px; vertical-align: middle;" class="changing_td">
+            <td style="right: 120px;" class="changing_td" id="{{forloop.counter}}">
               <form action="/duplicate/{{db}}/{{collection}}/{{doc.id}}--{{forloop.counter}}" method="GET">
                 <button type="submit" class="img_button">
                   <img src="{% static 'icons/duplicate.ico' %}"
@@ -240,14 +243,14 @@
                 </button>
               </form>
             </td>
-            <td style="right: 73px; padding-right: 3px;" class="changing_td">
+            <td style="right: 73px; padding-right: 3px;" class="changing_td" id="{{forloop.counter}}">
               <form action="/update/{{db}}/{{collection}}/{{doc.id}}--{{forloop.counter}}" method="GET">
                 <button type="submit" class="img_button">
                   <img src="{% static 'icons/edit.ico' %}" alt="update" width="35px" height="35px">
                 </button>
               </form>
             </td>
-            <td style="right: 30px;" class="changing_td">
+            <td style="right: 30px;" class="changing_td" id="{{forloop.counter}}">
               <form action="/delete/{{db}}/{{collection}}/{{doc.id}}--{{forloop.counter}}" method="GET">
                 <button type="submit" class="img_button">
                   <img src="{% static 'icons/delete.ico' %}" alt="delete" width="35px" height="35px">
