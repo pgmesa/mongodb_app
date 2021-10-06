@@ -28,7 +28,7 @@
 
     <script>
       document.addEventListener('DOMContentLoaded', (event) => {
-        let slider = document.getElementById('slider')
+        let slider = document.getElementById('slider');
         slider.onchange = () => {
           let theme_form = document.getElementById('theme_form');
           let input = document.createElement('input');
@@ -41,15 +41,19 @@
 
     <script>
       document.addEventListener('DOMContentLoaded', (event) => {
-        const id = "{{id_to_scroll}}"
+        const id = "{{id_to_scroll}}";
         element = document.getElementById(id);
-        let behavior = "auto"
-        // if (id <= 20) {
-        //   behavior = "smooth"
-        // }
+        // behavior = 'smooth'
+        let behavior = "auto";
         element.scrollIntoView({"block": "center", "behavior": behavior});
         //alert(window.scrollY)
       })
+    </script>
+
+    <script>
+      window.onresize = () => {
+        location.reload();
+      }
     </script>
 
     {% block js %}
@@ -94,7 +98,7 @@
       {% endif %}
     </header>
 
-    <nav>
+    <nav style="z-index: 1;">
       <table style="margin: auto;">
         <tr>
           <td style="padding: 0 10px;">
@@ -108,7 +112,7 @@
 
 
     {% if msg or err_msg or warning %}
-      <nav style="padding-bottom: 1%;" class="msg">
+      <nav style="padding-bottom: 1%; z-index: 1;" class="msg">
         {% block msg %}
           <table style="width: 100%;">
             {% if msg %}

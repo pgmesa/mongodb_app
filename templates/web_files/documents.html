@@ -3,6 +3,31 @@
 
 {% load static %} {% load custom_filters %}
 
+{% block js %}
+  <script>
+    document.addEventListener('DOMContentLoaded', (event) => {
+      let info_table = document.getElementById('info_table');
+      sides_margin = 40;
+      max_table_width = sides_margin + info_table.getBoundingClientRect().width + sides_margin;
+      screen_width = window.innerWidth;
+      if (max_table_width >= screen_width) {
+        let info_div = document.getElementById('info_div');
+        let tds = document.getElementsByClassName("changing_td");
+        for (let td of tds) {
+          // tdPosition = td.getBoundingClientRect();
+          // height = Math.round(tdPosition.top + tdPosition.height/2)
+          td.style.position = "absolute";
+          // td.style.height = `${height}px`;
+        }
+        // info_div.className = "overflowed"
+        info_div.style.overflow = "auto";
+        info_div.style.marginLeft = "10px";
+        info_div.style.marginRight = "150px";
+      }
+    })
+  </script>
+{% endblock %}
+
 {% block td_nav %}
   <td style="padding: 0 10px;"><a href="/display/{{db}}" class="nav_goback">Collections</a></td>
   {% if model %}
@@ -73,7 +98,7 @@
                 </td>
               </tr>
             </table>
-          </td>    
+          </td>
         {% endif %}
         {% if sorted %}
           <td>
@@ -97,7 +122,7 @@
                 </td>
               </tr>
             </table>
-          </td>    
+          </td>
         {% endif %}
       </tr>
     </table>
@@ -105,150 +130,152 @@
 {% endblock %}
 
 {% block content %}
-  <table style="margin: auto;">
-    {% if model and docs %}
-      <tr>
-        <td class="attr_name">Nº</td>
-        {% for attr_dict in model.values %}
-          <td style="padding: 10px">
-            <h3 class="attr_name">{{attr_dict.name}}</h3>
-          </td>
-        {% endfor %}
-      </tr>
-      {% if numbers %}
+  <div id="info_div">
+    <table style="margin: auto;" id="info_table">
+      {% if model and docs %}
         <tr>
-          <td></td>
-          <form action="/display/{{db}}/{{collection}}" method="POST">
-            {% csrf_token %}
+          <td class="attr_name">Nº</td>
+          {% for attr_dict in model.values %}
+            <td style="padding: 10px">
+              <h3 class="attr_name">{{attr_dict.name}}</h3>
+            </td>
+          {% endfor %}
+        </tr>
+        {% if numbers %}
+          <tr>
+            <td></td>
+            <form action="/display/{{db}}/{{collection}}" method="POST">
+              {% csrf_token %}
+              {% for attr_dict in model.values %}
+                <td>
+                  {% if attr_dict.type == 'int' or attr_dict.type == 'float' %}
+                    <select class="select" name="{{attr_dict.name}}_stat">
+                      <option value="-" {% if stats and attr_dict.name|addstr:"_stat"|lookup2:stats == '-' %}selected{% endif %}> - </option>
+                      <option value="avg" {% if stats and attr_dict.name|addstr:"_stat"|lookup2:stats == 'avg' %}selected{% endif %}>avg</option>
+                      <option value="sum" {% if stats and attr_dict.name|addstr:"_stat"|lookup2:stats == 'sum' %}selected{% endif %}>sum</option>
+                    </select>
+                  {% endif %}
+                </td>
+              {% endfor %}
+              <td class="changing_td" style="right: 112px;">
+                <button type="submit" class="img_button" style="padding: 1px 3px; margin: 0;" name="tick">
+                  <img src="{% static 'icons/tick.ico' %}" alt="Tick" width="35px" height="35px">
+                </button>
+              </td>
+              <td class="changing_td" style="right: 63px;">
+                <button type="submit" class="img_button" style="padding: 1px 3px; margin: 0;" name="bin">
+                  <img src="{% static 'icons/delete2.ico' %}" alt="Tick" width="35px" height="35px">
+                </button>
+              </td>
+            </form>
+          </tr>
+        {% endif %}
+        <tr>
+          {% if calculated_stats %}
+            <td></td>
             {% for attr_dict in model.values %}
               <td>
-                {% if attr_dict.type == 'int' or attr_dict.type == 'float' %} 
-                  <select class="select" name="{{attr_dict.name}}_stat">
-                    <option value="-" {% if stats and attr_dict.name|addstr:"_stat"|lookup2:stats == '-' %}selected{% endif %}> - </option>
-                    <option value="avg" {% if stats and attr_dict.name|addstr:"_stat"|lookup2:stats == 'avg' %}selected{% endif %}>avg</option>
-                    <option value="sum" {% if stats and attr_dict.name|addstr:"_stat"|lookup2:stats == 'sum' %}selected{% endif %}>sum</option>
-                  </select> 
+                {% if attr_dict.name in calculated_stats %}
+                  <div class="stats">
+                    {{calculated_stats|lookup:attr_dict.name}}
+                  </div>
                 {% endif %}
               </td>
             {% endfor %}
-            <td>
-              <button type="submit" class="img_button" style="padding: 1px 3px; margin: 0;" name="tick">
-                <img src="{% static 'icons/tick.ico' %}" alt="Tick" width="35px" height="35px">
-              </button>
-            </td>
-            <td>
-              <button type="submit" class="img_button" style="padding: 1px 3px; margin: 0;" name="bin">
-                <img src="{% static 'icons/delete2.ico' %}" alt="Tick" width="35px" height="35px">
-              </button>
-            </td>
-          </form>
+          {% endif %}
         </tr>
-      {% endif %}
-      <tr>
-        {% if calculated_stats %}
+        <tr>
           <td></td>
           {% for attr_dict in model.values %}
-            <td>
-              {% if attr_dict.name in calculated_stats %} 
-                <div class="stats">
-                  {{calculated_stats|lookup:attr_dict.name}}
-                </div>
-              {% endif %}
+            <td style="padding: 10px">
+              <h3 class="attr_type">({{attr_dict.type}})</h3>
             </td>
           {% endfor %}
-        {% endif %}
-      </tr>
-      <tr>
-        <td></td>
-        {% for attr_dict in model.values %}
-          <td style="padding: 10px">
-            <h3 class="attr_type">({{attr_dict.type}})</h3>
-          </td>
+        </tr>
+        {% for doc in docs %}
+          <tr id="{{forloop.counter}}" {% if forloop.counter == id_to_scroll %}class="selected_row"{% endif %}>
+            <td class="index">{{forloop.counter}}.</td>
+            {% for attr_dict in model.values %}
+              <td style="padding: 10px;">
+                {% if attr_dict.type == 'password' and doc|lookup:attr_dict.name != '-' %}
+                  <table style="width: 100%;">
+                    {% if doc|lookup:attr_dict.name not in passwords %}
+                      <td>
+                        <div style="white-space: pre-wrap;" class="unlocked_pw">{{doc|lookup:attr_dict.name}}</div>
+                      </td>
+                      <td style="width: 1%; padding-left: 10px;">
+                        <form action="/display/{{db}}/{{collection}}" method="POST">
+                          {% csrf_token %}
+                          <button type="submit" class="img_button" name="lock" value="{{doc|lookup:'id'}}">
+                            <img src="{% static 'icons/lock.ico' %}"
+                                alt="Lock" width="35px" height="35px">
+                          </button>
+                        </form>
+                      </td>
+                    {% else %}
+                      <td>
+                        <div style="white-space: pre-wrap;">{{doc|lookup:attr_dict.name}}</div>
+                      </td>
+                      <td style="width: 1%; padding-left: 10px;">
+                        <form action="/display/{{db}}/{{collection}}" method="POST">
+                          {% csrf_token %}
+                          <button type="submit" class="img_button" name="unlock" value="{{doc|lookup:attr_dict.name}}">
+                            <img src="{% static 'icons/key.ico' %}"
+                                alt="unlock" width="35px" height="35px">
+                          </button>
+                        </form>
+                      </td>
+                    {% endif %}
+                  </table>
+                {% else %}
+                  <div style="white-space: pre-wrap;">{{doc|lookup:attr_dict.name}}</div>
+                {% endif %}
+              </td>
+            {% endfor %}
+            <td style="right: 120px; vertical-align: middle;" class="changing_td">
+              <form action="/duplicate/{{db}}/{{collection}}/{{doc.id}}--{{forloop.counter}}" method="GET">
+                <button type="submit" class="img_button">
+                  <img src="{% static 'icons/duplicate.ico' %}"
+                      alt="duplicate" width="35px" height="35px">
+                </button>
+              </form>
+            </td>
+            <td style="right: 73px; padding-right: 3px;" class="changing_td">
+              <form action="/update/{{db}}/{{collection}}/{{doc.id}}--{{forloop.counter}}" method="GET">
+                <button type="submit" class="img_button">
+                  <img src="{% static 'icons/edit.ico' %}" alt="update" width="35px" height="35px">
+                </button>
+              </form>
+            </td>
+            <td style="right: 30px;" class="changing_td">
+              <form action="/delete/{{db}}/{{collection}}/{{doc.id}}--{{forloop.counter}}" method="GET">
+                <button type="submit" class="img_button">
+                  <img src="{% static 'icons/delete.ico' %}" alt="delete" width="35px" height="35px">
+                </button>
+              </form>
+            </td>
+          </tr>
         {% endfor %}
-      </tr>
-      {% for doc in docs %}
-        <tr id="{{forloop.counter}}" {% if forloop.counter == id_to_scroll %}class="selected_row"{% endif %}>
-          <td class="index">{{forloop.counter}}.</td>
-          {% for attr_dict in model.values %}
-            <td style="padding: 10px;">
-              {% if attr_dict.type == 'password' and doc|lookup:attr_dict.name != '-' %}
-                <table style="width: 100%;">
-                  {% if doc|lookup:attr_dict.name not in passwords %}
-                    <td>
-                      <div style="white-space: pre-wrap;" class="unlocked_pw">{{doc|lookup:attr_dict.name}}</div>
-                    </td>
-                    <td style="width: 1%; padding-left: 10px;">
-                      <form action="/display/{{db}}/{{collection}}" method="POST">
-                        {% csrf_token %}
-                        <button type="submit" class="img_button" name="lock" value="{{doc|lookup:'id'}}">
-                          <img src="{% static 'icons/lock.ico' %}"
-                              alt="Lock" width="35px" height="35px">
-                        </button>
-                      </form>
-                    </td>
-                  {% else %}
-                    <td>
-                      <div style="white-space: pre-wrap;">{{doc|lookup:attr_dict.name}}</div>
-                    </td>
-                    <td style="width: 1%; padding-left: 10px;">
-                      <form action="/display/{{db}}/{{collection}}" method="POST">
-                        {% csrf_token %}
-                        <button type="submit" class="img_button" name="unlock" value="{{doc|lookup:attr_dict.name}}">
-                          <img src="{% static 'icons/key.ico' %}"
-                              alt="unlock" width="35px" height="35px">
-                        </button>
-                      </form>
-                    </td>
-                  {% endif %}
-                </table>
-              {% else %}
-                <div style="white-space: pre-wrap;">{{doc|lookup:attr_dict.name}}</div>
-              {% endif %}
+      {% else %}
+        {% for doc in docs %}
+          <tr id="{{forloop.counter}}">
+            <td style="text-align: left;">
+              <pre style="white-space: pre-wrap; word-break: break-all;"><div class="index">{{forloop.counter}}:</div> {{doc}}</pre>
             </td>
-          {% endfor %}
-          <td style="padding-right:10px;">
-            <form action="/duplicate/{{db}}/{{collection}}/{{doc.id}}--{{forloop.counter}}" method="GET">
-              <button type="submit" class="img_button">
-                <img src="{% static 'icons/duplicate.ico' %}" 
-                    alt="duplicate" width="35px" height="35px">
-              </button>
-            </form>
-          </td>
-          <td style="padding: 0 5px;">
-            <form action="/update/{{db}}/{{collection}}/{{doc.id}}--{{forloop.counter}}" method="GET">
-              <button type="submit" class="img_button">
-                <img src="{% static 'icons/edit.ico' %}" alt="update" width="35px" height="35px">
-              </button>
-            </form>
-          </td>
-          <td style="padding: 0 5px;">
-            <form action="/delete/{{db}}/{{collection}}/{{doc.id}}--{{forloop.counter}}" method="GET">
-              <button type="submit" class="img_button">
-                <img src="{% static 'icons/delete.ico' %}" alt="delete" width="35px" height="35px">
-              </button>
-            </form>
-          </td>
-        </tr>
-      {% endfor %}
-    {% else %}
-      {% for doc in docs %}
-        <tr id="{{forloop.counter}}">
-          <td style="text-align: left;">
-            <pre style="white-space: pre-wrap; word-break: break-all;"><div class="index">{{forloop.counter}}:</div> {{doc}}</pre>
-          </td>
-        </tr>
-      {% endfor %}
-      {% if show_more %}
-        <tr>
-          <td style="padding: 0 5px;">
-            <form action="/display/{{db}}/{{collection}}" method="GET">
-              <button type="submit" class="img_button" style="padding: 1px 3px; margin: 0;" name="show_more" value="{{num}}">
-                <img src="{% static 'icons/add.ico' %}" alt="show_more" width="25px" height="25px">
-              </button>
-            </form>
-          </td>
-        </tr>
+          </tr>
+        {% endfor %}
+        {% if show_more %}
+          <tr>
+            <td style="padding: 0 5px;">
+              <form action="/display/{{db}}/{{collection}}" method="GET">
+                <button type="submit" class="img_button" style="padding: 1px 3px; margin: 0;" name="show_more" value="{{num}}">
+                  <img src="{% static 'icons/add.ico' %}" alt="show_more" width="25px" height="25px">
+                </button>
+              </form>
+            </td>
+          </tr>
+        {% endif %}
       {% endif %}
-    {% endif %}
-  </table>
+    </table>
+  </div>
 {% endblock %}
