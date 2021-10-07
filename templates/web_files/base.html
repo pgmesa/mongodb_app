@@ -26,7 +26,6 @@
       <link rel="stylesheet" href="{% static 'css/dark_theme/scrollbox.css' %}">
     {% endif %}
     <link rel="stylesheet" href="{% static 'css/toggle_switch.css' %}">
-    <link rel="stylesheet" href="{% static 'css/dark_theme/scrollbox.css' %}">
 
     <script>
       document.addEventListener('DOMContentLoaded', (event) => {
@@ -112,7 +111,6 @@
       </table> 
     </nav>
 
-
     {% if msg or err_msg or warning %}
       <nav style="padding-bottom: 1%; z-index: 1;" class="msg">
         {% block msg %}
@@ -149,16 +147,15 @@
         </nav>
     {% endif %}
 
-    <div id="main_content">
-      <div style="padding: 1%;">
-        {% block h %}
-        {% endblock %}
-      </div>
+    
+    <div style="padding: 1%;" id="main_content">
+      {% block h %}
+      {% endblock %}
+    </div>
       
-      <div>
-        {% block content %} 
-        {% endblock %}
-      </div>
+    <div id="main_content">
+      {% block content %} 
+      {% endblock %}
     </div>
 
     <footer>

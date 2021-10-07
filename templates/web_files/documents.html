@@ -15,7 +15,6 @@
         let tds = document.getElementsByClassName("changing_td");
         for (let td of tds) {
           tr_id = td.id;
-          // alert(tr_id)
           let tr = document.getElementById(tr_id);
           trPosition = tr.getBoundingClientRect();
           offset = 20 
@@ -60,80 +59,80 @@
       </form>
     {% endif %}
   </h2>
-  {% if filtered or sorted %}
-    <table style="margin: auto; margin-top: 20px;">
-      <tr>
-        {% if filtered %}
-          <td style="padding: 1px 5px;">
-            <div class="active_filter_border">
-              <h3 class="active_filter">Filter Active</h3>
-            </div>
-          </td>
-        {% endif %}
-        {% if sorted %}
-          <td style="padding: 1px 5px;">
-            <div class="active_filter_border">
-              <h3 class="active_filter">Sort Active</h3>
-            </div>
-          </td>
-        {% endif %}
-      </tr>
-      <tr>
-        {% if filtered %}
-          <td>
-            <table style="margin: auto;">
-              <tr>
-                <td style="padding: 0 5px;">
-                  <form action="/display/{{db}}/{{collection}}" method="POST">
-                    {% csrf_token %}
-                    <button type="submit" class="img_button" name="update_filter">
-                      <img src="{% static 'icons/edit.ico' %}" alt="Update Filter" width="35px" height="35px">
-                    </button>
-                  </form>
-                </td>
-                <td style="padding: 0 5px;">
-                  <form action="/display/{{db}}/{{collection}}" method="POST">
-                    {% csrf_token %}
-                    <button type="submit" class="img_button" name="delete_filter">
-                      <img src="{% static 'icons/delete.ico' %}" alt="delete_filter" width="35px" height="35px">
-                    </button>
-                  </form>
-                </td>
-              </tr>
-            </table>
-          </td>
-        {% endif %}
-        {% if sorted %}
-          <td>
-            <table style="margin: auto;">
-              <tr>
-                <td style="padding: 0 5px;">
-                  <form action="/display/{{db}}/{{collection}}" method="POST">
-                    {% csrf_token %}
-                    <button type="submit" class="img_button" name="update_sorter">
-                      <img src="{% static 'icons/edit.ico' %}" alt="Update Sort" width="35px" height="35px">
-                    </button>
-                  </form>
-                </td>
-                <td style="padding: 0 5px;">
-                  <form action="/display/{{db}}/{{collection}}" method="POST">
-                    {% csrf_token %}
-                    <button type="submit" class="img_button" name="delete_sorter">
-                      <img src="{% static 'icons/delete.ico' %}" alt="Delete Sort" width="35px" height="35px">
-                    </button>
-                  </form>
-                </td>
-              </tr>
-            </table>
-          </td>
-        {% endif %}
-      </tr>
-    </table>
-  {% endif %}
 {% endblock %}
 
 {% block content %}
-  <div id="info_div">
+  <div id="info_div" class="scrollbox">
+    {% if filtered or sorted %}
+      <table style="margin: auto; margin-top: 20px;">
+        <tr>
+          {% if filtered %}
+            <td style="padding: 1px 5px;">
+              <div class="active_filter_border">
+                <h3 class="active_filter">Filter Active</h3>
+              </div>
+            </td>
+          {% endif %}
+          {% if sorted %}
+            <td style="padding: 1px 5px;">
+              <div class="active_filter_border">
+                <h3 class="active_filter">Sort Active</h3>
+              </div>
+            </td>
+          {% endif %}
+        </tr>
+        <tr>
+          {% if filtered %}
+            <td>
+              <table style="margin: auto;">
+                <tr>
+                  <td style="padding: 0 5px;">
+                    <form action="/display/{{db}}/{{collection}}" method="POST">
+                      {% csrf_token %}
+                      <button type="submit" class="img_button" name="update_filter">
+                        <img src="{% static 'icons/edit.ico' %}" alt="Update Filter" width="35px" height="35px">
+                      </button>
+                    </form>
+                  </td>
+                  <td style="padding: 0 5px;">
+                    <form action="/display/{{db}}/{{collection}}" method="POST">
+                      {% csrf_token %}
+                      <button type="submit" class="img_button" name="delete_filter">
+                        <img src="{% static 'icons/delete.ico' %}" alt="delete_filter" width="35px" height="35px">
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          {% endif %}
+          {% if sorted %}
+            <td>
+              <table style="margin: auto;">
+                <tr>
+                  <td style="padding: 0 5px;">
+                    <form action="/display/{{db}}/{{collection}}" method="POST">
+                      {% csrf_token %}
+                      <button type="submit" class="img_button" name="update_sorter">
+                        <img src="{% static 'icons/edit.ico' %}" alt="Update Sort" width="35px" height="35px">
+                      </button>
+                    </form>
+                  </td>
+                  <td style="padding: 0 5px;">
+                    <form action="/display/{{db}}/{{collection}}" method="POST">
+                      {% csrf_token %}
+                      <button type="submit" class="img_button" name="delete_sorter">
+                        <img src="{% static 'icons/delete.ico' %}" alt="Delete Sort" width="35px" height="35px">
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          {% endif %}
+        </tr>
+      </table>
+    {% endif %}
     <table style="margin: auto;" id="info_table">
       {% if model and docs %}
         <tr>
