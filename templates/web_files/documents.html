@@ -53,10 +53,28 @@
     {% if num %}
       {{num}}/{{docs_len}}
     {% else %}
-      <form action="/display/{{db}}/{{collection}}" method="POST" name="clear_form">
-        {% csrf_token %}
-        <input type="submit" class="button" value="Clear all" name="clear">
-      </form>
+    <table style="margin: auto; margin-top: 10px;">
+      <tr>
+        <td>
+          <form action="" method="POST" name="import_form">
+            {% csrf_token %}
+            <input type="submit" class="button" value="Import" name="import">
+          </form>
+        </td>
+        <td>
+          <form action="/display/{{db}}/{{collection}}" method="POST" name="clear_form">
+            {% csrf_token %}
+            <input type="submit" class="button" value="Clear all" name="clear">
+          </form>
+        </td>
+        <td>
+          <form action="" method="POST" name="export_form">
+            {% csrf_token %}
+            <input type="submit" class="button" value="Export" name="export">
+          </form>
+        </td>
+      </tr>
+    </table>
     {% endif %}
   </h2>
 {% endblock %}

@@ -143,10 +143,10 @@ def _view_inspector(func):
             dic = {"err_msg": err_msg, "conserv_format": True, "failed_path": request.path_info}
             _set_extra_vars(dic, 'error')
             return HttpResponseRedirect('/error/')
-        except Exception as err:
-            err_msg = f"ERROR: {err}"
-            _set_extra_vars({"err_msg": err_msg, "failed_path": args[0].path_info}, 'error')
-            return HttpResponseRedirect('/error/')
+        # except Exception as err:
+        #     err_msg = f"ERROR: {err}"
+        #     _set_extra_vars({"err_msg": err_msg, "failed_path": args[0].path_info}, 'error')
+        #     return HttpResponseRedirect('/error/')
     return view_inspector
 
 def _order_lists(list_to_order:list, order_list:list) -> list:
@@ -804,7 +804,6 @@ def validate_key(request:HttpRequest, db:str, collection:str, doc_id:str, attr:s
                 return HttpResponseRedirect(f'/display/{db}/{collection}')
             elif 'update_view' in context_dict:
                 _set_extra_vars({"key_confirmed": info}, 'update_document')
-                doc_id = context_dict["doc_id"]
                 return HttpResponseRedirect(f'/update/{db}/{collection}/{doc_id}')
         else:
             context_dict["err_msg"] = f"The key '{passed_key}' is incorrect, changing ecryption..."
@@ -841,6 +840,7 @@ def validate_key(request:HttpRequest, db:str, collection:str, doc_id:str, attr:s
         if param in recycle_context:
             recycle_context.pop(param)
     _set_extra_vars(recycle_context, 'validate_key')
+    
     return render(request, 'validate_key.html', context_dict)
 
 @_view_inspector
