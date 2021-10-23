@@ -2,7 +2,6 @@
 import json
 import copy
 from contextlib import suppress
-from re import split
 from pymongo.errors import ServerSelectionTimeoutError
 # django imports
 from django.http import HttpResponse, HttpRequest, HttpResponseRedirect
