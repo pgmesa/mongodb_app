@@ -1,4 +1,5 @@
 
+import os
 from django import template
 from mypy_modules.register import register as reg
 
@@ -37,5 +38,11 @@ def get_type(tp:str):
 def is_theme(theme:str):
     real_theme = reg.load("theme")
     if (real_theme is None and theme == 'light') or theme == real_theme:
+        return True
+    return False
+
+@register.filter
+def skfile_added(ignore) -> bool:
+    if os.path.exists('server/secret_key.py'):
         return True
     return False

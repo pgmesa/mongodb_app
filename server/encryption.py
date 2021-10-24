@@ -1,6 +1,7 @@
 
 import random
 from math import floor
+        
 
 def encrypt(password:str, pw_length:int=None, mode:str=None) -> tuple[str, int, int, str]:
     if mode is None:

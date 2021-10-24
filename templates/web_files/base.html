@@ -27,6 +27,7 @@
     {% endif %}
     <link rel="stylesheet" href="{% static 'css/toggle_switch.css' %}">
 
+    {# script para cambiar tema #}
     <script>
       document.addEventListener('DOMContentLoaded', (event) => {
         let slider = document.getElementById('slider');
@@ -39,7 +40,7 @@
         }
       })
     </script>
-
+    {# script para cambiar volver a dejar el scroll donde estaba #}
     <script>
       document.addEventListener('DOMContentLoaded', (event) => {
         const id = "{{id_to_scroll}}";
@@ -50,11 +51,26 @@
         //alert(window.scrollY)
       })
     </script>
-
+    {# script para actualizar cuando se hace un resize de la pantalla #}
     <script>
       window.onresize = () => {
         location.reload();
       }
+    </script>
+    {# script para pedir al usuario que mete la password con la que se encripto el archivo sk #}
+    <script>
+      document.addEventListener('DOMContentLoaded', (event) => {
+      let update_skf_button = document.getElementById('update_skf');
+      let delete_skf_button = document.getElementById('delete_skf');
+      let buttons = [update_skf_button, delete_skf_button];
+      for (let but of buttons){
+        but.onclick = () => {
+          key = window.prompt("Introduce the file decryption key");
+          but.value = key
+          document.getElementById(`${but.id}_form`).submit();
+        }
+      }
+    })
     </script>
 
     {% block js %}
@@ -97,6 +113,49 @@
           </tr>
         </table>
       {% endif %}
+      <table style="margin: auto; margin-top: 10px;">
+        <tr>
+          {% if not ''|skfile_added %}
+            <td style="padding-right: 10px;"> 
+              <img src="{% static 'icons/bad.ico' %}" alt="" width="35px" height="35px">
+            </td>
+          {% else %}
+            <td style="padding-right: 10px;"> 
+              <img src="{% static 'icons/good.ico' %}" alt="" width="35px" height="35px">
+            </td>
+          {% endif %}
+          <td style="padding-right: 10px;">
+            SK FILE
+          </td>
+          {% if not ''|skfile_added %}
+            <td>
+              <form action="" method="POST" id="add_skf_form">
+                {% csrf_token %}
+                <button type="submit" class="img_button" name="add_skf" id="add_skf">
+                  <img src="{% static 'icons/browser.ico' %}" alt="show_more" width="35px" height="35px">
+                </button>
+              </form>
+            </td>
+          {% else %}
+            <td style="padding-right: 3px;" class="changing_td">
+              <form action="" method="POST" id="update_skf_form">
+                {% csrf_token %}
+                <button type="submit" class="img_button" name="update_skf" id="update_skf">
+                  <img src="{% static 'icons/edit.ico' %}" alt="update" width="30px" height="30px">
+                </button>
+              </form>
+            </td>
+            <td class="changing_td">
+              <form action="" method="POST" id="delete_skf_form">
+                {% csrf_token %}
+                <button type="submit" class="img_button" name="delete_skf" id="delete_skf">
+                  <img src="{% static 'icons/delete.ico' %}" alt="delete" width="30px" height="30px">
+                </button>
+              </form>
+            </td>
+          {% endif %}
+        </tr>
+      </table>
     </header>
 
     <nav style="z-index: 1;">

@@ -28,6 +28,27 @@
       }
     })
   </script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', (event) => {
+      let unlock_buttons = document.getElementsByName('unlock');
+      for (let but of unlock_buttons){
+        but.onclick = () => {
+          let ask_sk_key = "{{ask_sk_key}}"
+          if (ask_sk_key === "True") {
+            frenet_key = window.prompt("Introduce the file decryption key to use")
+          }
+          num_id = but.id.replace("unlock_but_")
+          let input = document.createElement("input");
+          input.type = "text"; input.name = "sk_file_key"; input.value = num_id
+          let but_form = document.getElementById(`unlock_form_${num_id}`)
+          but_form.appendChild(input)
+          but_form.submit()
+        }
+      }
+    })
+  </script>
+
 {% endblock %}
 
 {% block td_nav %}
@@ -237,9 +258,9 @@
                         <div style="white-space: pre-wrap;">{{doc|lookup:attr_dict.name}}</div>
                       </td>
                       <td style="width: 1%; padding-left: 10px;">
-                        <form action="/display/{{db}}/{{collection}}" method="POST">
+                        <form action="/display/{{db}}/{{collection}}" method="POST" id="unlock_form_{{forloop.counter}}">
                           {% csrf_token %}
-                          <button type="submit" class="img_button" name="unlock" value="{{doc|lookup:attr_dict.name}}">
+                          <button type="submit" class="img_button" name="unlock" id="unlock_but_{{forloop.counter}}" value="{{doc|lookup:attr_dict.name}}">
                             <img src="{% static 'icons/key.ico' %}"
                                 alt="unlock" width="35px" height="35px">
                           </button>

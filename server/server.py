@@ -1,7 +1,8 @@
 
+import os
 import json
 import copy
-from contextlib import suppress
+from contextlib import suppress, contextmanager
 from pymongo.errors import ServerSelectionTimeoutError
 # django imports
 from django.http import HttpResponse, HttpRequest, HttpResponseRedirect
@@ -12,6 +13,7 @@ from controllers import db_controller as dbc
 from mypy_modules.register import register
 from commands.reused_code import NotInstalledError, check_mongo_installed
 from .encryption import *
+from .skf_lib import *
 
 def _clean_form(form:QueryDict) -> dict:
     cleaned = form.dict()
@@ -115,6 +117,30 @@ def _view_inspector(func):
             elif theme == 'dark':
                 theme = 'light'
             register.update('theme', theme)
+        skf_form = _clean_form(request.POST)   
+        if bool(skf_form):
+            if 'add_skf' in skf_form:
+                # open the browser
+                file_path = ""
+                if check_valid_skf(file_path):
+                    ...
+                else:
+                    err_msg = "El fichero seleccionado no es valido"
+                    _set_extra_vars({"err_msg": err_msg},func.__name__)
+                ...
+            elif 'update_skf' in skf_form:
+                skf_key = skf_form.pop('update_skf')
+                # open the browser
+                file_path = ""
+                if check_valid_skf(file_path):
+                    ...
+                else:
+                    err_msg = "El fichero seleccionado no es valido"
+                    _set_extra_vars({"err_msg": err_msg},func.__name__)
+                ...
+            elif 'delete_skf' in skf_form:
+                skf_key = skf_form.pop('delete_skf')
+                ...
         # -----------------------------------------------------
         view_params = register.load('view_params')
         if view_params is None:
@@ -201,22 +227,46 @@ def _modify_data(name:str, copy_to_name:str=None, delete:bool=False):
                         new_reg[key] = new_values
     register.override(new_reg)
     
-def _check_secret_file():
-    try:
-        import server.secret_key as sk
-        sk.get; sk.hide
-        sk.hide(1234, 1213423423); sk.get(187242423478894)
-        return True, None
-    except ImportError:
-        valid = False
-        msg = "No se ha implementado un fichero secret_key.py en la carpeta /server. "
-    except AttributeError:
-        valid = False
-        msg = "El fichero server/secret_key.py no contiene alguna de las funciones sk.get o sk.hide. "
-    except Exception:
-        valid = False
-        msg = "En las funciones sk.get o sk.hide saltan excepciones (se ignoraran). "
+def _is_sk_encrypted() -> bool:
+    secret_key_path = 'server/secret_key.py'
+    if os.path.exists(secret_key_path):
+        with open(secret_key_path, 'r') as file:
+            content = file.read()
+            if "#_ENCRYPTED_#" in content:
+                return True
+    return False
+
+@contextmanager
+def try_unlock_sk_file(sk_file_key):
+    if _is_sk_encrypted() and sk_file_key is not None:
+        decrypt_sk_file()
+        yield True
+    yield False
+    if _is_sk_encrypted():
+        encrypt_sk_file()
+
+def _check_secret_file(sk_file_key:str=None):
+    with try_unlock_sk_file(sk_file_key) as has_been_decrypted:
+    # sk_info = register. 
+    # if os.path.exists('server/secret_key.py'):
         
+        try:
+            import server.secret_key as sk
+            sk.get; sk.hide
+            sk.hide(1234, 1213423423); sk.get(187242423478894)
+            return True, None
+        except ImportError:
+            valid = False
+            msg = "No se ha implementado un fichero secret_key.py en la carpeta /server. "
+        except AttributeError:
+            valid = False
+            msg = "El fichero server/secret_key.py no contiene alguna de las funciones sk.get o sk.hide. "
+        except Exception:
+            valid = False
+            msg = "En las funciones sk.get o sk.hide saltan excepciones (se ignoraran). "
+        if not valid and has_been_decrypted:
+            err_msg = msg + "Puede que la clave de acceso al fichero secret_key.py sea incorrecta"
+            return valid, err_msg
     err_msg = "Las encriptaciones de las contraseñas no son seguras, las claves son visibles. "
     err_msg += msg
     err_msg += "En caso de haber contraseñas guardadas previamente, sera necesario el fichero "
@@ -850,6 +900,8 @@ def display_documents(request:HttpRequest, db:str, collection:str, extra_vars:di
     secret_file, check_msg = _check_secret_file()
     if not secret_file:
         context_dict["warning"] = check_msg
+    if _is_sk_encrypted():
+        context_dict["ask_sk_key"] = True
     
     context_dict["passwords"] = dbc.get_passwords(db, collection, with_id=True)
     extra_vars = _get_extra_vars("display_documents")
@@ -978,7 +1030,13 @@ def display_documents(request:HttpRequest, db:str, collection:str, extra_vars:di
                     break
             else:
                 continue
-            break  
+            break
+        # Comprobamos que la clave de desbloqueo del fichero es correcto
+        sk_file_key = unlock_form.pop('sk_file_key')
+        secret_file, check_msg = _check_secret_file(sk_file_key=sk_file_key)
+        if not secret_file:
+            context_dict["warning"] = check_msg
+            
         if key is not None:
             if target_doc is not None:
                 try:
