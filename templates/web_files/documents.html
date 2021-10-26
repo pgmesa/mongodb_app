@@ -10,7 +10,9 @@
       sides_margin = 40;
       max_table_width = sides_margin + info_table.getBoundingClientRect().width + sides_margin;
       screen_width = window.innerWidth;
+      
       if (max_table_width >= screen_width) {
+        
         let info_div = document.getElementById('info_div');
         let tds = document.getElementsByClassName("changing_td");
         for (let td of tds) {
@@ -21,6 +23,7 @@
           height = Math.round(trPosition.top + scrollY + trPosition.height/2 - offset)
           td.style.top = `${height}px`;
           td.style.position = "absolute";
+          
         }
         info_div.style.overflow = "auto";
         info_div.style.marginLeft = "10px";

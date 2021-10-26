@@ -58,10 +58,10 @@
       }
     </script>
     {# script para pedir al usuario que mete la password con la que se encripto el archivo sk #}
-    <script>
+    <!-- <script>
       document.addEventListener('DOMContentLoaded', (event) => {
-      let update_skf_button = document.getElementById('update_skf');
-      let delete_skf_button = document.getElementById('delete_skf');
+      let update_skf_button = document.getElementById('update_cf');
+      let delete_skf_button = document.getElementById('delete_cf');
       let buttons = [update_skf_button, delete_skf_button];
       for (let but of buttons){
         but.onclick = () => {
@@ -71,6 +71,55 @@
         }
       }
     })
+    </script> -->
+    {# script para que se habra el explorador de archivos al pulsar el boton #}
+    <!-- <script>
+      document.addEventListener('DOMContentLoaded', (event) => {
+        let add = document.getElementById('add_cf_button');
+        let update = document.getElementById('update_cf_button');
+        cf_buttons = [add, update];
+        for (let but of cf_buttons) {
+          if (but === null) {continue}
+          but.onclick = () => {
+            let cf_file_input = document.getElementById('cf_file');
+            cf_file_input.click();
+          }
+        }
+      })
+    </script> -->
+
+    <script>
+      function popup(mode) {
+        let popup = document.getElementById('mk_popup')
+        popup.style.display = 'block'
+        let mk_msg_div = document.getElementById('mk_msg')
+        if (mode === 'add'){
+          mk_msg_div.innerText = 'For security add a Master Key to encrypt the cipher file'
+        } else {
+          mk_msg_div.innerText = 'Enter the Master Key to decrypt the cipher file'
+        }
+        document.getElementById('validate_button').name = mode
+      }
+      function processAction() {
+        mode = document.getElementById('validate_button').name
+        alert(mode)
+        let master_key = document.getElementById('master_key').value;
+        let form = document.getElementById(`${mode}_cf_form`);
+        let new_input = document.createElement('input');
+        new_input.value = master_key; new_input.name = 'validate_mk';
+        new_input.style.hidden = true;
+        let new_input2 = document.createElement('input');
+        new_input2.type = 'submit'
+        form.appendChild(new_input2)
+        form.appendChild(new_input)
+        alert(new_input.name)
+        if (mode !== 'delete') {
+          let cf_file_input = document.getElementById('cf_file');
+          cf_file_input.onchange = () => {form.submit()}
+          cf_file_input.click();
+        }
+        form.submit();
+      }
     </script>
 
     {% block js %}
@@ -115,7 +164,7 @@
       {% endif %}
       <table style="margin: auto; margin-top: 10px;">
         <tr>
-          {% if not ''|skfile_added %}
+          {% if not ''|cipherfile_added %}
             <td style="padding-right: 10px;"> 
               <img src="{% static 'icons/bad.ico' %}" alt="" width="35px" height="35px">
             </td>
@@ -125,30 +174,34 @@
             </td>
           {% endif %}
           <td style="padding-right: 10px;">
-            SK FILE
+            CIPHER FILE
           </td>
-          {% if not ''|skfile_added %}
+          {% if not ''|cipherfile_added %}
             <td>
-              <form action="" method="POST" id="add_skf_form">
+              <form action="" method="POST" id="add_cf_form" enctype="multipart/form-data">
                 {% csrf_token %}
-                <button type="submit" class="img_button" name="add_skf" id="add_skf">
+                <button type="button" class="img_button" id="add_cf_button" onclick="popup('add');">
                   <img src="{% static 'icons/browser.ico' %}" alt="show_more" width="35px" height="35px">
                 </button>
+                <input type="text" name="add_cf" hidden>
+                <input type="file" id="cf_file" name="cf_file" accept=".py" onchange="this.form.submit();" hidden>
               </form>
             </td>
           {% else %}
-            <td style="padding-right: 3px;" class="changing_td">
-              <form action="" method="POST" id="update_skf_form">
+            <td style="padding-right: 3px;">
+              <form action="" method="POST" id="update_cf_form" enctype="multipart/form-data">
                 {% csrf_token %}
-                <button type="submit" class="img_button" name="update_skf" id="update_skf">
+                <button type="button" class="img_button" id="update_cf_button" onclick="popup('update');">
                   <img src="{% static 'icons/edit.ico' %}" alt="update" width="30px" height="30px">
                 </button>
+                <input type="text" name="update_cf" hidden>
+                <input type="file" id="cf_file" name="cf_file" accept=".py" onchange="this.form.submit();" hidden>
               </form>
             </td>
-            <td class="changing_td">
-              <form action="" method="POST" id="delete_skf_form">
+            <td>
+              <form action="" method="POST" id="delete_cf_form">
                 {% csrf_token %}
-                <button type="submit" class="img_button" name="delete_skf" id="delete_skf">
+                <button type="submit" class="img_button" name="delete_cf" id="delete_cf_button" onclick="popup('delete');">
                   <img src="{% static 'icons/delete.ico' %}" alt="delete" width="30px" height="30px">
                 </button>
               </form>
@@ -168,6 +221,26 @@
           {% endblock %}
         </tr>
       </table> 
+      <div id="mk_popup" style="margin-top: 20px; display: none;">
+        <table style="margin: auto;">
+          <tr>
+            <td colspan="2" style="padding-bottom: 10px;">
+              <div id="mk_msg"></div> 
+            </td>
+          </tr>
+          <tr>
+            <form action="" method="POST">
+              {% csrf_token %}
+              <td style="text-align: right;"  style="width: 50%;">
+                <input type="password" name="master_key" id="master_key">
+              </td>
+              <td style="text-align: left; width: 35%;" >
+                <input type="submit" id="validate_button" value="confirm" class="button" onclick="processAction();">
+              </td>
+            </form>
+          </tr>  
+        </table>
+      </div>
     </nav>
 
     {% if msg or err_msg or warning %}

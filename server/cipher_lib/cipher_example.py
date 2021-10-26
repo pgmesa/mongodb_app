@@ -40,3 +40,6 @@ def get(seed:int) -> tuple[int, int]:
     ...
     
     return key, seed
+
+
+

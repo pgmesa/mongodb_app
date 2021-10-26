@@ -42,7 +42,7 @@ def is_theme(theme:str):
     return False
 
 @register.filter
-def skfile_added(ignore) -> bool:
-    if os.path.exists('server/secret_key.py'):
+def cipherfile_added(ignore) -> bool:
+    if os.path.exists('server/cipher_lib/cipher.py'):
         return True
     return False

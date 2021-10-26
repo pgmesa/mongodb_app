@@ -8,12 +8,14 @@ from pymongo.errors import ServerSelectionTimeoutError
 from django.http import HttpResponse, HttpRequest, HttpResponseRedirect
 from django.http.request import QueryDict
 from django.shortcuts import render
+from django.core.files.uploadedfile import UploadedFile
 # program imports
 from controllers import db_controller as dbc
 from mypy_modules.register import register
 from commands.reused_code import NotInstalledError, check_mongo_installed
-from .encryption import *
-from .skf_lib import *
+from .encryption_lib.encryption import *
+import concurrent.futures as conc
+
 
 def _clean_form(form:QueryDict) -> dict:
     cleaned = form.dict()
@@ -100,13 +102,44 @@ def _parse_doc_attrs(actual_model:dict, doc:dict, filter_=False, new_model:dict=
         parsed_doc[name] = parsed
     return parsed_doc
 
+cf_path = 'server/cipher_lib/cipher.py'
+cf_test_path = cf_path.replace(".py", "_test.py")
+
+def _check_valid_cf(file:UploadedFile):
+    # return False, None
+    with open(cf_test_path, 'wb') as test_file:
+        for chunk in file.chunks():
+            test_file.write(chunk)
+    try:
+        import server.cipher_lib.cipher_test as cph
+        key = b'\xf5\xa8\x18\xc6\x8aHo\xfd\xb99@\xbe\x97~\xc4\xd0'
+        ciphered = cph.cipher(key)
+        if key != cph.decipher(ciphered):
+            raise Exception('NotValidFile: Las funciones cipher y decipher no son inversas')
+    except ImportError:
+        err_msg = "NotValidFile: El fichero no contiene las funciones 'cipher', 'decipher'"
+        os.remove(cf_test_path)
+        return False, err_msg
+    except Exception as err:
+        os.remove(cf_test_path)
+        return False, str(err)
+    
+    return True, None
+
 def _view_inspector(func):
     def view_inspector(*args, **kwargs) -> HttpResponse:
         # Checkear si se ha cambiado el tema  y si si, redirigir a misma view en la que estabamos
         # request.POST
         request:HttpRequest = args[0]
-        theme_form = _clean_form(request.POST)
-        if bool(theme_form) and "toggle_theme" in theme_form:
+        post_form = _clean_form(request.POST)
+        print(post_form)
+        # Miramos si hay que evaluar la master key
+        if 'validate_mk' in post_form:
+            cf_key = post_form.pop('update_cf')
+            # in_hash = get_sha256_hash(cf_key)
+            # if in_hash != register.load('master_key_hash'):
+            #     err_msg = "Incorrect master key"
+        if bool(post_form) and "toggle_theme" in post_form:
             # Cambiamos tema
             theme = register.load("theme")
             if theme is None:
@@ -117,30 +150,30 @@ def _view_inspector(func):
             elif theme == 'dark':
                 theme = 'light'
             register.update('theme', theme)
-        skf_form = _clean_form(request.POST)   
-        if bool(skf_form):
-            if 'add_skf' in skf_form:
-                # open the browser
-                file_path = ""
-                if check_valid_skf(file_path):
+        elif bool(post_form):
+            err_msg = None; msg = None
+            if 'add_cf' in post_form:
+                file = request.FILES['cf_file']
+                valid, err_msg = _check_valid_cf(file)
+                if valid:
+                    os.rename(cf_test_path, cf_path)
+                    encrypt_file(cf_path, )
+                    msg = "'Cipher file' añadido y encriptado con exito con exito"
+            elif 'update_cf' in post_form:
+                file = request.FILES['cf_file']
+                valid, err_msg = _check_valid_cf(file)
+                if valid:
+                    # Cambiar el cifrado de cada key guardada
                     ...
-                else:
-                    err_msg = "El fichero seleccionado no es valido"
-                    _set_extra_vars({"err_msg": err_msg},func.__name__)
-                ...
-            elif 'update_skf' in skf_form:
-                skf_key = skf_form.pop('update_skf')
-                # open the browser
-                file_path = ""
-                if check_valid_skf(file_path):
-                    ...
-                else:
-                    err_msg = "El fichero seleccionado no es valido"
-                    _set_extra_vars({"err_msg": err_msg},func.__name__)
-                ...
-            elif 'delete_skf' in skf_form:
-                skf_key = skf_form.pop('delete_skf')
-                ...
+                    msg = "'Cipher file' actualizado con exito"
+            elif 'delete_cf' in post_form:
+                os.remove(cf_path)
+                msg = "'Cipher file' eliminado con exito"
+                    
+            if msg is not None:
+                _set_extra_vars({"msg": msg},func.__name__)
+            elif err_msg is not None:
+                _set_extra_vars({"err_msg": err_msg},func.__name__)
         # -----------------------------------------------------
         view_params = register.load('view_params')
         if view_params is None:
@@ -239,11 +272,12 @@ def _is_sk_encrypted() -> bool:
 @contextmanager
 def try_unlock_sk_file(sk_file_key):
     if _is_sk_encrypted() and sk_file_key is not None:
-        decrypt_sk_file()
+        #decrypt_sk_file()
         yield True
     yield False
     if _is_sk_encrypted():
-        encrypt_sk_file()
+        #encrypt_sk_file()
+        ...
 
 def _check_secret_file(sk_file_key:str=None):
     with try_unlock_sk_file(sk_file_key) as has_been_decrypted:
@@ -892,18 +926,25 @@ def validate_key(request:HttpRequest, db:str, collection:str, doc_id:str, attr:s
     
     return render(request, 'validate_key.html', context_dict)
 
+def _check_cipher_file():
+    return os.path.exists('server/cipher_lib/cipher.py')
+
 @_view_inspector
 def display_documents(request:HttpRequest, db:str, collection:str, extra_vars:dict={}) -> HttpResponse:
     context_dict = {"db": db, "collection": collection}
     context_dict["change_theme"] = True
-    # Checkeamos si hay existe o es valido el archivo secret_key.py
-    secret_file, check_msg = _check_secret_file()
-    if not secret_file:
-        context_dict["warning"] = check_msg
-    if _is_sk_encrypted():
-        context_dict["ask_sk_key"] = True
     
-    context_dict["passwords"] = dbc.get_passwords(db, collection, with_id=True)
+    secret_file , msg = _check_secret_file()
+    
+    passwords_stored = dbc.get_passwords(db, collection, with_id=True)
+    if bool(passwords_stored) and not _check_cipher_file():
+        warning = "Las contraseñas almacenadas no se podran descifrar sin el fichero cipher.py original"
+        context_dict["warning"] = warning
+    elif not bool(passwords_stored) and not _check_cipher_file():
+        warning = "Las claves son vulnerables, no estan cifradas por ningun fichero cipher.py (se debe añadir)"
+        context_dict["warning"] = warning
+    context_dict["passwords"] = passwords_stored
+    
     extra_vars = _get_extra_vars("display_documents")
     for var, val in extra_vars.items():
         context_dict[var] = val
@@ -1031,11 +1072,11 @@ def display_documents(request:HttpRequest, db:str, collection:str, extra_vars:di
             else:
                 continue
             break
-        # Comprobamos que la clave de desbloqueo del fichero es correcto
-        sk_file_key = unlock_form.pop('sk_file_key')
-        secret_file, check_msg = _check_secret_file(sk_file_key=sk_file_key)
-        if not secret_file:
-            context_dict["warning"] = check_msg
+        # # Comprobamos que la clave de desbloqueo del fichero es correcto
+        # sk_file_key = unlock_form.pop('sk_file_key')
+        # secret_file, check_msg = _check_secret_file(sk_file_key=sk_file_key)
+        # if not secret_file:
+        #     context_dict["warning"] = check_msg
             
         if key is not None:
             if target_doc is not None:
