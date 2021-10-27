@@ -57,36 +57,6 @@
         location.reload();
       }
     </script>
-    {# script para pedir al usuario que mete la password con la que se encripto el archivo sk #}
-    <!-- <script>
-      document.addEventListener('DOMContentLoaded', (event) => {
-      let update_skf_button = document.getElementById('update_cf');
-      let delete_skf_button = document.getElementById('delete_cf');
-      let buttons = [update_skf_button, delete_skf_button];
-      for (let but of buttons){
-        but.onclick = () => {
-          key = window.prompt("Introduce the file decryption key");
-          but.value = key
-          document.getElementById(`${but.id}_form`).submit();
-        }
-      }
-    })
-    </script> -->
-    {# script para que se habra el explorador de archivos al pulsar el boton #}
-    <!-- <script>
-      document.addEventListener('DOMContentLoaded', (event) => {
-        let add = document.getElementById('add_cf_button');
-        let update = document.getElementById('update_cf_button');
-        cf_buttons = [add, update];
-        for (let but of cf_buttons) {
-          if (but === null) {continue}
-          but.onclick = () => {
-            let cf_file_input = document.getElementById('cf_file');
-            cf_file_input.click();
-          }
-        }
-      })
-    </script> -->
     {# script de funciones que manejan el explorador de archivos y la validacion de la master key #}
     <script>
       function popup(mode) {
