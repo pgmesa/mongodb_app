@@ -87,38 +87,58 @@
         }
       })
     </script> -->
-
+    {# script de funciones que manejan el explorador de archivos y la validacion de la master key #}
     <script>
       function popup(mode) {
-        let popup = document.getElementById('mk_popup')
-        popup.style.display = 'block'
-        let mk_msg_div = document.getElementById('mk_msg')
+        let popup = document.getElementById('mk_popup');
+        popup.style.display = 'block';
+        let mk_msg_div = document.getElementById('mk_msg');
         if (mode === 'add'){
-          mk_msg_div.innerText = 'For security add a Master Key to encrypt the cipher file'
+          mk_msg_div.innerText = 'For security add a Master Key to encrypt the cipher file';
         } else {
-          mk_msg_div.innerText = 'Enter the Master Key to decrypt the cipher file'
+          mk_msg_div.innerText = `(${mode}) Enter the Master Key to decrypt the cipher file`;
         }
-        document.getElementById('validate_button').name = mode
+        document.getElementById('validate_button').name = mode;
       }
       function processAction() {
         mode = document.getElementById('validate_button').name
-        alert(mode)
-        let master_key = document.getElementById('master_key').value;
         let form = document.getElementById(`${mode}_cf_form`);
-        let new_input = document.createElement('input');
-        new_input.value = master_key; new_input.name = 'validate_mk';
-        new_input.style.hidden = true;
-        let new_input2 = document.createElement('input');
-        new_input2.type = 'submit'
-        form.appendChild(new_input2)
-        form.appendChild(new_input)
-        alert(new_input.name)
-        if (mode !== 'delete') {
-          let cf_file_input = document.getElementById('cf_file');
-          cf_file_input.onchange = () => {form.submit()}
-          cf_file_input.click();
-        }
-        form.submit();
+        let master_key = document.getElementById('master_key').value;
+        true_master_key_hash = "{{mk_hash}}"; 
+        
+        sha256(master_key).then(master_key_hash => {
+          if ((true_master_key_hash !== "None") && (master_key_hash !== true_master_key_hash)) {
+            document.getElementById('mk_error_msg').innerText = 'Clave incorrecta'
+          } else {
+            mk_input = document.getElementById('mk_input');
+            if (mk_input === null){
+              let mk_input = document.createElement('input');
+              mk_input.value = master_key; mk_input.name = 'mk_input';
+              mk_input.style.display = 'none'; mk_input.id = 'mk_input';
+              form.appendChild(mk_input);
+            } else { 
+              mk_input.value = master_key;
+            }
+            if (mode !== 'delete') {
+              let cf_file_input = document.getElementById('cf_file');
+              cf_file_input.onchange = () => {form.submit()};
+              cf_file_input.click();
+              return
+            }
+            form.submit();
+          }
+        })
+      }
+      async function sha256(message){
+        // encode as UTF-8
+        const msgBuffer = new TextEncoder().encode(message);                 
+        // hash the message
+        const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+        // convert ArrayBuffer to Array
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        // convert bytes to hex string                  
+        const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join(''); 
+        return hashHex
       }
     </script>
 
@@ -184,7 +204,7 @@
                   <img src="{% static 'icons/browser.ico' %}" alt="show_more" width="35px" height="35px">
                 </button>
                 <input type="text" name="add_cf" hidden>
-                <input type="file" id="cf_file" name="cf_file" accept=".py" onchange="this.form.submit();" hidden>
+                <input type="file" id="cf_file" name="cf_file" accept=".py" hidden>
               </form>
             </td>
           {% else %}
@@ -195,15 +215,16 @@
                   <img src="{% static 'icons/edit.ico' %}" alt="update" width="30px" height="30px">
                 </button>
                 <input type="text" name="update_cf" hidden>
-                <input type="file" id="cf_file" name="cf_file" accept=".py" onchange="this.form.submit();" hidden>
+                <input type="file" id="cf_file" name="cf_file" accept=".py" hidden>
               </form>
             </td>
             <td>
               <form action="" method="POST" id="delete_cf_form">
                 {% csrf_token %}
-                <button type="submit" class="img_button" name="delete_cf" id="delete_cf_button" onclick="popup('delete');">
+                <button type="button" class="img_button" name="delete_cf" id="delete_cf_button" onclick="popup('delete');">
                   <img src="{% static 'icons/delete.ico' %}" alt="delete" width="30px" height="30px">
                 </button>
+                <input type="text" name="delete_cf" hidden>
               </form>
             </td>
           {% endif %}
@@ -229,13 +250,20 @@
             </td>
           </tr>
           <tr>
+            <td colspan="2" style="padding-bottom: 5px;">
+              <h3 id="mk_error_msg" class="error" style="font-size: 20px;"></h3>
+            </td>
+          </tr>
+          <tr>
             <form action="" method="POST">
               {% csrf_token %}
               <td style="text-align: right;"  style="width: 50%;">
                 <input type="password" name="master_key" id="master_key">
               </td>
               <td style="text-align: left; width: 35%;" >
-                <input type="submit" id="validate_button" value="confirm" class="button" onclick="processAction();">
+                <button type="button" id="validate_button" value="confirm" class="button" onclick="processAction();">
+                  confirm
+                </button>
               </td>
             </form>
           </tr>  

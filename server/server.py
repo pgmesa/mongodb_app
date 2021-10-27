@@ -134,11 +134,8 @@ def _view_inspector(func):
         post_form = _clean_form(request.POST)
         print(post_form)
         # Miramos si hay que evaluar la master key
-        if 'validate_mk' in post_form:
-            cf_key = post_form.pop('update_cf')
-            # in_hash = get_sha256_hash(cf_key)
-            # if in_hash != register.load('master_key_hash'):
-            #     err_msg = "Incorrect master key"
+        if 'mk_input' in post_form:
+            in_master_key = post_form.pop('mk_input')
         if bool(post_form) and "toggle_theme" in post_form:
             # Cambiamos tema
             theme = register.load("theme")
@@ -157,7 +154,9 @@ def _view_inspector(func):
                 valid, err_msg = _check_valid_cf(file)
                 if valid:
                     os.rename(cf_test_path, cf_path)
-                    encrypt_file(cf_path, )
+                    encrypt_file(cf_path, in_master_key)
+                    in_hash = get_sha256_hash(in_master_key)
+                    register.add('master_key_hash', in_hash)
                     msg = "'Cipher file' añadido y encriptado con exito con exito"
             elif 'update_cf' in post_form:
                 file = request.FILES['cf_file']
@@ -168,6 +167,7 @@ def _view_inspector(func):
                     msg = "'Cipher file' actualizado con exito"
             elif 'delete_cf' in post_form:
                 os.remove(cf_path)
+                register.remove('master_key_hash')
                 msg = "'Cipher file' eliminado con exito"
                     
             if msg is not None:
@@ -188,6 +188,7 @@ def _view_inspector(func):
         register.update('view_params', view_params)
         try:
             check_mongo_installed()
+            _set_extra_vars({"mk_hash": register.load('master_key_hash')}, func.__name__)
             return func(*args, **kwargs)
         except NotInstalledError as err:
             err_msg = f"ERROR: {err}"
@@ -228,7 +229,8 @@ def _order_lists(list_to_order:list, order_list:list) -> list:
     return ordered_list
 
 config_keys = [
-    "extra_vars", "view_params", "tasks", "github", "hide_dbs", "autocomplete", "theme"
+    "extra_vars", "view_params", "tasks", "github", "hide_dbs", "autocomplete", "theme",
+    "master_key_hash"
 ]
 
 def _modify_data(name:str, copy_to_name:str=None, delete:bool=False):

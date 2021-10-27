@@ -41,7 +41,7 @@ def decrypt(token:bytes, key:bytes) -> str:
 def encrypt_file(file_path:str, password:str, override:bool=True):
     key = derive_password(password)
     with open(file_path, 'rb') as file:
-        token = encrypt(file.read(), key)
+        token = encrypt(file.read().decode(), key)
     if not override:
         filename, extension, dirpath = split_path(file_path)
         file_path = dirpath+filename+"_encrypted"+extension
