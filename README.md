@@ -3,9 +3,15 @@
 Custom web app (made with python django framework) that creates a layer of abstraction between the user and the Mongo DB shell (like a Mongo Compass) but with special features like github connections and backup and restore options. It also has a command line interface to interact with the app. Bear in mind that this project is not finished (some code could be better written or is redundant and more features are planned to be added), but is completely functional.
 
 ## Installation
-1. If you are in windows, execute the installer.bat to add the program into PATH. To interact, type 'mongoapp' in a terminal.
+First of all, you need to create a .env file in the '/configs' directory with the following content
+```
+SECRET_KEY = '....your secret key ....'
+```
+Generate your django key here (https://djecrety.ir/) and paste it
 
-2. Execute with python the file main.py (install all the external dependencies in the requirements.txt)
+- Option 1. If you are in windows, execute the installer.bat to add the program into PATH. To interact, type 'mongoapp' in a terminal.
+
+- Option 2. Execute with python the file main.py (install all the external dependencies in the requirements.txt)
 
 ## How to Use
 Manage your MongoDB with the web app interface
