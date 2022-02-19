@@ -5,7 +5,7 @@ Custom web app (made with python django framework) that creates a layer of abstr
 ## Installation
 1. If you are in windows, execute the installer.bat to add the program into PATH. To interact, type 'mongoapp' in a terminal.
 
-2. Execute with python the file main.py (install all the external dependencies with in the requirements.txt)
+2. Execute with python the file main.py (install all the external dependencies in the requirements.txt)
 
 ## How to Use
 Manage your MongoDB with the web app interface
